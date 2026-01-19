@@ -46,8 +46,8 @@
 - [x] **Rate Limiting Helper** (`lib/rate-limit.ts`) - Generic rate limit check function for reuse across APIs
 - [x] **Middleware Protection** (`middleware.ts`) - Protect /admin routes, force TOTP setup, guest portal auth checks
 - [x] **Backup Codes Validation** - Allow admin login with backup codes if TOTP device lost
-- [ ] **Reverse Proxy Docs** - Caddy/Nginx config for HTTPS, production recommendations, firewall rules
-- [ ] **Monitoring Setup** - UptimeRobot config, error alerts, email on health check failures
+- [x] **Reverse Proxy Docs** - Caddy/Nginx config for HTTPS, production recommendations, firewall rules
+- [x] **Monitoring Setup** - UptimeRobot config, error alerts, email on health check failures
 - [x] **Admin Settings Page** (`/admin/settings`) - Change password, regenerate TOTP, disable 2FA, notification preferences
 
 ## Completed
