@@ -14,6 +14,7 @@ const requestSchema = z.object({
 
 const MAX_ATTEMPTS = parseInt(process.env.RATE_LIMIT_CODE_ATTEMPTS || '3')
 const GUEST_AUTH_DAYS = parseInt(process.env.GUEST_AUTH_DURATION_DAYS || '7')
+const ALLOW_OFFLINE_AUTH = process.env.ALLOW_OFFLINE_AUTH === 'true'
 
 export async function POST(request: NextRequest) {
   try {
@@ -203,13 +204,64 @@ export async function POST(request: NextRequest) {
       try {
         unifiAuthorized = await unifi.authorizeGuest(macAddress, GUEST_AUTH_DAYS * 24 * 60)
         if (!unifiAuthorized) {
-          unifiError = 'Network authorization failed. You may need to reconnect to the network.'
+          const errorMsg = 'Network authorization failed'
           console.warn('Unifi authorization failed for MAC:', macAddress)
+
+          if (!ALLOW_OFFLINE_AUTH) {
+            // Fail-fast mode: reject the request
+            logger.authFail({
+              userId: user.id,
+              ipAddress: logger.getClientIP(request.headers),
+              email: normalizedEmail,
+              reason: 'unifi_authorization_failed',
+              macAddress,
+            })
+            return NextResponse.json(
+              {
+                error:
+                  errorMsg +
+                  '. Please ensure you are connected to the guest network and try again.',
+                recoverySteps: [
+                  'Verify you are connected to the guest WiFi network',
+                  'Try disconnecting and reconnecting to the network',
+                  'Contact the network administrator if the problem persists',
+                ],
+              },
+              { status: 503 }
+            )
+          }
+
+          // Graceful degradation mode: warn but continue
+          unifiError = errorMsg + '. You may need to reconnect to the network.'
         }
       } catch (err) {
-        // Log but don't fail - guest can still be tracked in our DB
-        unifiError = 'Network authorization error. Please reconnect to the network.'
+        const errorMsg = 'Network authorization error'
         console.error('Unifi authorization error:', err)
+
+        if (!ALLOW_OFFLINE_AUTH) {
+          // Fail-fast mode: reject the request
+          logger.authFail({
+            userId: user.id,
+            ipAddress: logger.getClientIP(request.headers),
+            email: normalizedEmail,
+            reason: 'unifi_connection_error',
+            macAddress,
+          })
+          return NextResponse.json(
+            {
+              error: errorMsg + '. The network controller is currently unavailable.',
+              recoverySteps: [
+                'Wait a few minutes and try again',
+                'Verify the network is operational',
+                'Contact the network administrator if the problem persists',
+              ],
+            },
+            { status: 503 }
+          )
+        }
+
+        // Graceful degradation mode: warn but continue
+        unifiError = errorMsg + '. Please reconnect to the network.'
       }
     }
 

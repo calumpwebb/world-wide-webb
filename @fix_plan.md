@@ -117,11 +117,16 @@
   - [ ] Environment variable security checklist
   - [ ] Database backup/restore procedures
 
-- [ ] **Unifi Error Handling Strategy** - Currently logs warnings but returns success (src/app/api/guest/verify-code/route.ts:199-214)
-  - [ ] Add ALLOW_OFFLINE_AUTH env var to configure fail-fast vs graceful degradation
-  - [ ] Fail request if Unifi authorization fails (when not in offline mode)
-  - [ ] Better user error messaging with recovery steps
-  - [ ] Document decision in architecture notes
+- [x] **Unifi Error Handling Strategy** - ✅ **COMPLETED (2026-01-19)** - Configurable fail-fast vs graceful degradation
+  - [x] Add ALLOW_OFFLINE_AUTH env var to configure fail-fast vs graceful degradation
+  - [x] Fail request if Unifi authorization fails (when not in offline mode)
+  - [x] Better user error messaging with recovery steps
+  - [x] Document decision in architecture notes
+  - **Implementation:** Added ALLOW_OFFLINE_AUTH env var (default: false for production)
+    - `false` (production): Fail-fast with HTTP 503 and recovery steps when Unifi fails
+    - `true` (development): Graceful degradation, returns success with warning
+    - Error responses include actionable recovery steps for users
+    - Proper logging of Unifi failures with auth_fail events
 
 - [ ] **Input Sanitization** - XSS risk in user-provided data
   - [ ] Sanitize user names before storage (prevent stored XSS in admin panel)
@@ -205,7 +210,10 @@
 ### Architecture Decisions
 - **Passwordless for guests**: Email verification sufficient, better UX than passwords
 - **Unified Better Auth**: Single auth system for guest + admin, cleaner than separate auth
-- **Fail fast on Unifi errors**: Clear error message better than hanging request (now returns warnings to users)
+- **Configurable Unifi error handling**: ALLOW_OFFLINE_AUTH env var controls fail-fast (production) vs graceful degradation (development)
+  - Production (ALLOW_OFFLINE_AUTH=false): Fail-fast with HTTP 503 when Unifi unavailable, clear recovery steps for users
+  - Development (ALLOW_OFFLINE_AUTH=true): Warn but allow auth to succeed for easier testing without Unifi
+  - Balances reliability (production) with developer experience (local development)
 - **7-day authorization**: Renewable via re-verification, balances convenience and security
 - **Polling over WebSockets**: Simpler for home network scale, 30s is responsive enough
 - **Keep all data forever**: Analytics and easy returns outweigh storage concerns
