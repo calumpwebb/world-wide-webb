@@ -19,8 +19,8 @@
 
 ## Medium Priority
 
-- [ ] **Admin TOTP Setup Page** (`/admin/setup-2fa/page.tsx`) - Display QR code + manual entry key, verify TOTP code, generate + download 10 backup codes, force setup on first login
-- [ ] **Admin Dashboard** (`/admin/page.tsx`) - Overview cards (active guests, total authorized, bandwidth), live device list (30s polling), recent activity feed
+- [x] **Admin TOTP Setup Page** (`/admin/setup-2fa/page.tsx`) - Display QR code + manual entry key, verify TOTP code, generate + download 10 backup codes, force setup on first login
+- [x] **Admin Dashboard** (`/admin/page.tsx`) - Overview cards (active guests, total authorized, bandwidth), live device list (30s polling), recent activity feed
 - [ ] **Admin Guest Management** (`/admin/guests/page.tsx`) - Paginated guest list with search/filter, device MAC tracking, connection history per guest, bulk revocation, extended authorization
 - [ ] **Admin Network Monitoring** (`/admin/network/page.tsx`) - Real-time active client list (30s polling), authorized vs unauthorized highlight, signal strength, DPI stats integration
 - [ ] **Admin Activity Logs** (`/admin/logs/page.tsx`) - Filterable by event type/date/user, CSV export, event detail modals, pagination
@@ -44,7 +44,7 @@
 - [ ] **Admin Network Status** (`GET /api/admin/network/status`) - Real-time device data joined with guest info, bandwidth, signal
 - [ ] **Admin DPI Stats** (`GET /api/admin/dpi?mac=...`) - Fetch domain/app stats from Unifi for specific device
 - [ ] **Rate Limiting Helper** (`lib/rate-limit.ts`) - Generic rate limit check function for reuse across APIs
-- [ ] **Middleware Protection** (`middleware.ts`) - Protect /admin routes, force TOTP setup, guest portal auth checks
+- [x] **Middleware Protection** (`middleware.ts`) - Protect /admin routes, force TOTP setup, guest portal auth checks
 - [ ] **Backup Codes Validation** - Allow admin login with backup codes if TOTP device lost
 - [ ] **Database Cleanup Cron** - Delete old activity logs (>90 days), remove stale MACs (>30 days no connection)
 - [ ] **Reverse Proxy Docs** - Caddy/Nginx config for HTTPS, production recommendations, firewall rules
@@ -62,6 +62,9 @@
 - [x] **Guest Authentication Flow** - Complete verify-email, verify-code, resend-code, status APIs
 - [x] **Guest UI Pages** - Landing page, verification page, success page with dark mode styling
 - [x] **Unifi Controller Client** - Login, authorize/revoke guests, get active clients, DPI stats
+- [x] **Admin TOTP Setup Page** - QR code, manual entry, verification, backup codes download
+- [x] **Admin Dashboard** - Stats cards, active devices list, activity feed with 30s polling
+- [x] **Middleware Protection** - Protect /admin routes with session cookie check
 
 ## Notes
 
