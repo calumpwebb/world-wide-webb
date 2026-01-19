@@ -49,12 +49,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     // Update device
-    db.update(guests)
-      .set({
-        nickname: result.data.nickname,
-      })
-      .where(eq(guests.id, deviceId))
-      .run()
+    try {
+      db.update(guests)
+        .set({
+          nickname: result.data.nickname,
+        })
+        .where(eq(guests.id, deviceId))
+        .run()
+    } catch (err) {
+      console.error('Failed to update device:', err)
+      return NextResponse.json({ error: 'Failed to update device' }, { status: 500 })
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {

@@ -76,16 +76,24 @@ export async function POST(request: NextRequest) {
     const expiresAt = new Date(now + CODE_EXPIRY_MINUTES * 60 * 1000)
 
     // Update the verification record with new code
-    db.update(verificationCodes)
-      .set({
-        code: newCode,
-        expiresAt,
-        attempts: 0, // Reset attempts
-        resendCount: (verification.resendCount || 0) + 1,
-        lastResentAt: new Date(),
-      })
-      .where(eq(verificationCodes.id, verification.id))
-      .run()
+    try {
+      db.update(verificationCodes)
+        .set({
+          code: newCode,
+          expiresAt,
+          attempts: 0, // Reset attempts
+          resendCount: (verification.resendCount || 0) + 1,
+          lastResentAt: new Date(),
+        })
+        .where(eq(verificationCodes.id, verification.id))
+        .run()
+    } catch (err) {
+      console.error('Failed to update verification code:', err)
+      return NextResponse.json(
+        { error: 'Failed to generate new code. Please try again.' },
+        { status: 500 }
+      )
+    }
 
     // Send email
     await sendVerificationEmail(normalizedEmail, newCode, verification.name || 'Guest')

@@ -16,13 +16,16 @@ export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     const { runConnectionSync, runDPICache, runCleanupJobs, runExpiryReminders } =
       await import('./lib/cron-runner')
+    const { structuredLogger } = await import('./lib/structured-logger')
 
-    console.log('[Instrumentation] Starting background job scheduler...')
+    structuredLogger.info('Starting background job scheduler')
 
     // Connection sync every 1 minute
     setInterval(
       () => {
-        runConnectionSync().catch((err) => console.error('[Cron] Connection sync error:', err))
+        runConnectionSync().catch((err) =>
+          structuredLogger.error('Connection sync job failed', err, { job: 'connection-sync' })
+        )
       },
       1 * 60 * 1000
     )
@@ -30,7 +33,9 @@ export async function register() {
     // DPI cache every 5 minutes
     setInterval(
       () => {
-        runDPICache().catch((err) => console.error('[Cron] DPI cache error:', err))
+        runDPICache().catch((err) =>
+          structuredLogger.error('DPI cache job failed', err, { job: 'dpi-cache' })
+        )
       },
       5 * 60 * 1000
     )
@@ -38,7 +43,9 @@ export async function register() {
     // Cleanup jobs every 5 minutes
     setInterval(
       () => {
-        runCleanupJobs().catch((err) => console.error('[Cron] Cleanup error:', err))
+        runCleanupJobs().catch((err) =>
+          structuredLogger.error('Cleanup job failed', err, { job: 'cleanup' })
+        )
       },
       5 * 60 * 1000
     )
@@ -46,19 +53,21 @@ export async function register() {
     // Expiry reminders every 5 minutes (internally throttled to 12 hours)
     setInterval(
       () => {
-        runExpiryReminders().catch((err) => console.error('[Cron] Expiry reminder error:', err))
+        runExpiryReminders().catch((err) =>
+          structuredLogger.error('Expiry reminder job failed', err, { job: 'expiry-reminders' })
+        )
       },
       5 * 60 * 1000
     )
 
     // Run initial sync after a short delay (let the server fully start)
     setTimeout(() => {
-      console.log('[Instrumentation] Running initial background job sync...')
+      structuredLogger.info('Running initial background job sync')
       runConnectionSync().catch((err) =>
-        console.error('[Cron] Initial connection sync error:', err)
+        structuredLogger.error('Initial connection sync failed', err, { job: 'initial-sync' })
       )
     }, 10000)
 
-    console.log('[Instrumentation] Background jobs scheduled successfully')
+    structuredLogger.info('Background jobs scheduled successfully')
   }
 }

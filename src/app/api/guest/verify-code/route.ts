@@ -57,10 +57,14 @@ export async function POST(request: NextRequest) {
     // Check attempt count
     if ((verification.attempts || 0) >= MAX_ATTEMPTS) {
       // Invalidate the code
-      db.update(verificationCodes)
-        .set({ used: true })
-        .where(eq(verificationCodes.id, verification.id))
-        .run()
+      try {
+        db.update(verificationCodes)
+          .set({ used: true })
+          .where(eq(verificationCodes.id, verification.id))
+          .run()
+      } catch (err) {
+        console.error('Failed to invalidate verification code:', err)
+      }
 
       return NextResponse.json(
         { error: 'Too many attempts. Please request a new code.', expired: true },
@@ -71,10 +75,14 @@ export async function POST(request: NextRequest) {
     // Verify the code
     if (verification.code !== code) {
       // Increment attempts
-      db.update(verificationCodes)
-        .set({ attempts: (verification.attempts || 0) + 1 })
-        .where(eq(verificationCodes.id, verification.id))
-        .run()
+      try {
+        db.update(verificationCodes)
+          .set({ attempts: (verification.attempts || 0) + 1 })
+          .where(eq(verificationCodes.id, verification.id))
+          .run()
+      } catch (err) {
+        console.error('Failed to increment verification attempts:', err)
+      }
 
       const remainingAttempts = MAX_ATTEMPTS - (verification.attempts || 0) - 1
 
@@ -95,28 +103,41 @@ export async function POST(request: NextRequest) {
     }
 
     // Code is valid - mark as used
-    db.update(verificationCodes)
-      .set({ used: true })
-      .where(eq(verificationCodes.id, verification.id))
-      .run()
+    try {
+      db.update(verificationCodes)
+        .set({ used: true })
+        .where(eq(verificationCodes.id, verification.id))
+        .run()
+    } catch (err) {
+      console.error('Failed to mark verification code as used:', err)
+      return NextResponse.json({ error: 'Verification failed. Please try again.' }, { status: 500 })
+    }
 
     // Get or create user
     let user = db.select().from(users).where(eq(users.email, normalizedEmail)).get()
 
     if (!user) {
-      const userId = randomUUID()
-      db.insert(users)
-        .values({
-          id: userId,
-          email: normalizedEmail,
-          name: verification.name,
-          role: 'guest',
-          emailVerified: true,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .run()
-      user = db.select().from(users).where(eq(users.id, userId)).get()
+      try {
+        const userId = randomUUID()
+        db.insert(users)
+          .values({
+            id: userId,
+            email: normalizedEmail,
+            name: verification.name,
+            role: 'guest',
+            emailVerified: true,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .run()
+        user = db.select().from(users).where(eq(users.id, userId)).get()
+      } catch (err) {
+        console.error('Failed to create user:', err)
+        return NextResponse.json(
+          { error: 'User creation failed. Please try again.' },
+          { status: 500 }
+        )
+      }
     }
 
     if (!user) {
@@ -137,42 +158,53 @@ export async function POST(request: NextRequest) {
       .where(and(eq(guests.userId, user.id), eq(guests.macAddress, macAddress)))
       .get()
 
-    if (existingGuest) {
-      // Update existing authorization
-      db.update(guests)
-        .set({
-          expiresAt,
-          lastSeen: now,
-          authCount: (existingGuest.authCount || 1) + 1,
-          ipAddress,
-        })
-        .where(eq(guests.id, existingGuest.id))
-        .run()
-    } else {
-      // Create new guest authorization
-      db.insert(guests)
-        .values({
-          userId: user.id,
-          macAddress,
-          ipAddress,
-          deviceInfo: request.headers.get('user-agent') || undefined,
-          authorizedAt: now,
-          expiresAt,
-          authCount: 1,
-        })
-        .run()
+    try {
+      if (existingGuest) {
+        // Update existing authorization
+        db.update(guests)
+          .set({
+            expiresAt,
+            lastSeen: now,
+            authCount: (existingGuest.authCount || 1) + 1,
+            ipAddress,
+          })
+          .where(eq(guests.id, existingGuest.id))
+          .run()
+      } else {
+        // Create new guest authorization
+        db.insert(guests)
+          .values({
+            userId: user.id,
+            macAddress,
+            ipAddress,
+            deviceInfo: request.headers.get('user-agent') || undefined,
+            authorizedAt: now,
+            expiresAt,
+            authCount: 1,
+          })
+          .run()
+      }
+    } catch (err) {
+      console.error('Failed to create/update guest authorization:', err)
+      return NextResponse.json(
+        { error: 'Failed to authorize device. Please try again.' },
+        { status: 500 }
+      )
     }
 
     // Authorize MAC on Unifi Controller (if MAC is provided)
     let unifiAuthorized = false
+    let unifiError: string | null = null
     if (macAddress) {
       try {
         unifiAuthorized = await unifi.authorizeGuest(macAddress, GUEST_AUTH_DAYS * 24 * 60)
         if (!unifiAuthorized) {
+          unifiError = 'Network authorization failed. You may need to reconnect to the network.'
           console.warn('Unifi authorization failed for MAC:', macAddress)
         }
       } catch (err) {
         // Log but don't fail - guest can still be tracked in our DB
+        unifiError = 'Network authorization error. Please reconnect to the network.'
         console.error('Unifi authorization error:', err)
       }
     }
@@ -206,6 +238,7 @@ export async function POST(request: NextRequest) {
         name: user.name,
         email: user.email,
       },
+      warning: unifiError || undefined,
     })
   } catch (error) {
     console.error('Error in verify-code:', error)
