@@ -73,16 +73,19 @@
 - [x] **Admin Notifications** - Email on new guest, expiry reminders (24h before), dashboard alerts API (`/api/admin/alerts`)
 - [x] **Rate Limiting Helper** (`lib/rate-limit.ts`) - Generic checkRateLimit, resetRateLimit, getRateLimitStatus, formatRateLimitError functions
 - [x] **Admin Settings Page** (`/admin/settings`) - Change password, regenerate TOTP (via disable+re-enable flow), generate new backup codes
+- [x] **Error Handling & Structured Logging** (2026-01-19) - Added try-catch blocks around all database .run() operations, created structured logger for production observability, added error boundaries for all route groups, improved Unifi authorization error feedback
 
 ## Notes
 
 ### Architecture Decisions
 - **Passwordless for guests**: Email verification sufficient, better UX than passwords
 - **Unified Better Auth**: Single auth system for guest + admin, cleaner than separate auth
-- **Fail fast on Unifi errors**: Clear error message better than hanging request
+- **Fail fast on Unifi errors**: Clear error message better than hanging request (now returns warnings to users)
 - **7-day authorization**: Renewable via re-verification, balances convenience and security
 - **Polling over WebSockets**: Simpler for home network scale, 30s is responsive enough
 - **Keep all data forever**: Analytics and easy returns outweigh storage concerns
+- **Structured logging**: JSON logs in production, human-readable in dev for better observability
+- **Comprehensive error handling**: All database operations wrapped in try-catch, prevents silent failures
 
 ### Rate Limiting Strategy
 - Guest verification: 5 per email per hour (Better Auth)
