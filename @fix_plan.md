@@ -76,6 +76,103 @@
 - [x] **Error Handling & Structured Logging** (2026-01-19) - Added try-catch blocks around all database .run() operations, created structured logger for production observability, added error boundaries for all route groups, improved Unifi authorization error feedback
 - [x] **Critical Bug Fixes** (2026-01-19) - Fixed admin guests route filtering, timing-safe code verification, MAC normalization, N+1 query optimization, DPI stats population
 
+## Production Readiness Gaps (2026-01-19)
+
+### 🔴 P0 - Critical (Must Fix Before Production)
+
+- [ ] **Test Coverage** - Zero tests currently. Need minimum 60% coverage for core flows
+  - [ ] Set up Vitest + @testing-library/react + @testing-library/jest-dom
+  - [ ] Set up Playwright for E2E tests
+  - [ ] Unit tests for guest auth flow (verify-email, verify-code with rate limiting)
+  - [ ] Unit tests for admin auth flow (TOTP setup, session validation)
+  - [ ] Integration tests for Unifi client (authorize, revoke, client list with mocks)
+  - [ ] E2E tests for complete user journeys (guest signup, admin login)
+  - [ ] Test rate limiting enforcement (5/hour email, 3 attempts code, 30s cooldown)
+  - [ ] Test edge cases (expired codes, invalid tokens, Unifi failures)
+
+- [ ] **Middleware Security** - Currently only checks cookie existence, not validity (src/middleware.ts:13)
+  - [ ] Server-side session validation using `auth.api.getSession()`
+  - [ ] Role-based access control (verify `role === 'admin'`)
+  - [ ] TOTP enforcement check (redirect to setup-2fa if not enabled)
+  - [ ] Handle expired sessions server-side
+
+- [ ] **Secret Validation** - No checks for production-strength secrets
+  - [ ] Startup validation in instrumentation.ts for BETTER_AUTH_SECRET != default
+  - [ ] Admin password complexity validation (12+ chars in production)
+  - [ ] Force password change on first admin login
+  - [ ] Generate secrets script for initial setup
+
+### 🟡 P1 - High Priority (Should Fix Soon)
+
+- [ ] **Production Deployment Guide** - Missing critical deployment documentation
+  - [ ] Create DEPLOYMENT.md with complete production setup guide
+  - [ ] Systemd service file example (with auto-restart)
+  - [ ] Nginx/Caddy reverse proxy config with SSL/TLS (Let's Encrypt)
+  - [ ] Unifi Controller configuration guide (captive portal setup with screenshots)
+  - [ ] Firewall rules and network configuration
+  - [ ] Environment variable security checklist
+  - [ ] Database backup/restore procedures
+
+- [ ] **Unifi Error Handling Strategy** - Currently logs warnings but returns success (src/app/api/guest/verify-code/route.ts:199-214)
+  - [ ] Add ALLOW_OFFLINE_AUTH env var to configure fail-fast vs graceful degradation
+  - [ ] Fail request if Unifi authorization fails (when not in offline mode)
+  - [ ] Better user error messaging with recovery steps
+  - [ ] Document decision in architecture notes
+
+- [ ] **Input Sanitization** - XSS risk in user-provided data
+  - [ ] Sanitize user names before storage (prevent stored XSS in admin panel)
+  - [ ] Stricter MAC address regex validation
+  - [ ] Add Content Security Policy headers
+  - [ ] HTML escape user input in email templates
+
+### 🟢 P2 - Medium Priority (Nice to Have)
+
+- [ ] **Monitoring & Alerting**
+  - [ ] Prometheus metrics endpoint (beyond /api/metrics)
+  - [ ] Grafana dashboard JSON config
+  - [ ] Alert rules for critical failures (Unifi down, DB errors)
+  - [ ] UptimeRobot or Healthchecks.io setup guide
+  - [ ] Log aggregation setup (Loki/Grafana or similar)
+
+- [ ] **Database Backups**
+  - [ ] Automated SQLite backup script (daily snapshots)
+  - [ ] Backup rotation policy (keep 30 days)
+  - [ ] Restore procedure documentation + testing
+  - [ ] Offsite backup configuration
+
+- [ ] **API Documentation**
+  - [ ] OpenAPI/Swagger specification
+  - [ ] Request/response examples for all endpoints
+  - [ ] Error code reference with recovery actions
+  - [ ] Rate limit documentation
+
+### 🔵 P3 - Low Priority (Future Enhancements)
+
+- [ ] **Code Cleanup**
+  - [ ] Remove deprecated normalizeMac wrapper in src/lib/unifi.ts:180
+  - [ ] Replace magic numbers with named constants (e.g., 600000 → CODE_EXPIRY_MS)
+  - [ ] Add JSDoc comments to complex functions
+  - [ ] Extract hardcoded values to configuration
+
+- [ ] **Performance Optimization**
+  - [ ] Add caching layer for Unifi API calls (Redis or in-memory)
+  - [ ] Database query profiling and optimization
+  - [ ] Connection pooling for better-sqlite3
+  - [ ] Frontend bundle size optimization
+
+- [ ] **User Experience**
+  - [ ] Loading states for all async buttons
+  - [ ] Better error messages with actionable recovery steps
+  - [ ] Toast notifications for background actions
+  - [ ] Progressive web app (PWA) support for guest portal
+
+### Missing Features from PRD (Optional)
+
+- [ ] **Disposable Email Blocking** (PRD line 1702-1721) - Block temporary email services
+- [ ] **Password Reset UI** (PRD line 313-319) - Better Auth provides API, need dedicated route
+- [ ] **Guest Voucher System** (PRD line 2620) - Phase 3 feature, not critical
+- [ ] **DB/Unifi Sync Job** (PRD line 1638-1661) - 5-minute job to detect authorization mismatches
+
 ## Notes
 
 ### Recent Bug Fixes (2026-01-19)
