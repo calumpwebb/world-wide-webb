@@ -21,9 +21,9 @@
 
 - [x] **Admin TOTP Setup Page** (`/admin/setup-2fa/page.tsx`) - Display QR code + manual entry key, verify TOTP code, generate + download 10 backup codes, force setup on first login
 - [x] **Admin Dashboard** (`/admin/page.tsx`) - Overview cards (active guests, total authorized, bandwidth), live device list (30s polling), recent activity feed
-- [ ] **Admin Guest Management** (`/admin/guests/page.tsx`) - Paginated guest list with search/filter, device MAC tracking, connection history per guest, bulk revocation, extended authorization
-- [ ] **Admin Network Monitoring** (`/admin/network/page.tsx`) - Real-time active client list (30s polling), authorized vs unauthorized highlight, signal strength, DPI stats integration
-- [ ] **Admin Activity Logs** (`/admin/logs/page.tsx`) - Filterable by event type/date/user, CSV export, event detail modals, pagination
+- [x] **Admin Guest Management** (`/admin/guests/page.tsx`) - Paginated guest list with search/filter, device MAC tracking, connection history per guest, bulk revocation, extended authorization
+- [x] **Admin Network Monitoring** (`/admin/network/page.tsx`) - Real-time active client list (30s polling), authorized vs unauthorized highlight, signal strength, DPI stats integration
+- [x] **Admin Activity Logs** (`/admin/logs/page.tsx`) - Filterable by event type/date/user, CSV export, event detail modals, pagination
 - [ ] **Guest Portal Dashboard** (`/portal/page.tsx`) - Welcome message with name, connection status, time remaining, data usage, list of authorized MACs with status
 - [ ] **Guest Device Management** (`/portal/devices/page.tsx`) - Edit device nicknames, view connection history per MAC, request time extension
 - [ ] **Activity Logging System** (`lib/logger.ts`) - Log all events (connect, disconnect, auth_success, auth_fail, admin actions) with timestamps, user, MAC, IP, JSON details
@@ -39,10 +39,10 @@
 - [ ] **Metrics Endpoint** (`GET /api/metrics`) - Guest counts, auth attempts, active devices
 - [x] **Guest Resend Code** (`POST /api/guest/resend-code`) - 30s cooldown, 3/hour limit, rate limiting
 - [x] **Guest Status Check** (`GET /api/guest/status?mac=...`) - Check if MAC already authorized, return guest info
-- [ ] **Admin Revoke Guest** (`POST /api/admin/revoke`) - Revoke access, call Unifi, log admin_revoke event
-- [ ] **Admin Get Guests** (`GET /api/admin/guests`) - Paginated list with filtering, join with Unifi data for online status
-- [ ] **Admin Network Status** (`GET /api/admin/network/status`) - Real-time device data joined with guest info, bandwidth, signal
-- [ ] **Admin DPI Stats** (`GET /api/admin/dpi?mac=...`) - Fetch domain/app stats from Unifi for specific device
+- [x] **Admin Revoke Guest** (`POST /api/admin/guests/revoke`) - Revoke access, call Unifi, log admin_revoke event
+- [x] **Admin Get Guests** (`GET /api/admin/guests`) - Paginated list with filtering, join with Unifi data for online status
+- [x] **Admin Network Status** (`GET /api/admin/network/status`) - Real-time device data joined with guest info, bandwidth, signal
+- [x] **Admin DPI Stats** (`GET /api/admin/dpi?mac=...`) - Fetch domain/app stats from Unifi for specific device
 - [ ] **Rate Limiting Helper** (`lib/rate-limit.ts`) - Generic rate limit check function for reuse across APIs
 - [x] **Middleware Protection** (`middleware.ts`) - Protect /admin routes, force TOTP setup, guest portal auth checks
 - [ ] **Backup Codes Validation** - Allow admin login with backup codes if TOTP device lost

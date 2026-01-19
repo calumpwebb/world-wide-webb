@@ -1,6 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db, activityLogs, users } from '@/lib/db'
-import { eq, desc } from 'drizzle-orm'
+import { eq, desc, sql, like, or, and, gte, lte } from 'drizzle-orm'
+
+type EventType =
+  | 'connect'
+  | 'disconnect'
+  | 'auth_success'
+  | 'auth_fail'
+  | 'admin_revoke'
+  | 'admin_extend'
+  | 'code_sent'
+  | 'code_resent'
+  | 'admin_login'
+  | 'admin_logout'
+
+const VALID_EVENT_TYPES: EventType[] = [
+  'connect',
+  'disconnect',
+  'auth_success',
+  'auth_fail',
+  'admin_revoke',
+  'admin_extend',
+  'code_sent',
+  'code_resent',
+  'admin_login',
+  'admin_logout',
+]
 
 const EVENT_DESCRIPTIONS: Record<string, (details?: string) => string> = {
   auth_success: (details) => {
@@ -24,9 +49,57 @@ const EVENT_DESCRIPTIONS: Record<string, (details?: string) => string> = {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const limit = parseInt(searchParams.get('limit') || '10')
-    const offset = parseInt(searchParams.get('offset') || '0')
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '20')
+    const eventType = searchParams.get('type') || ''
+    const search = searchParams.get('search') || ''
+    const startDate = searchParams.get('startDate') || ''
+    const endDate = searchParams.get('endDate') || ''
 
+    const offset = (page - 1) * limit
+
+    // Build where conditions
+    const whereConditions = []
+
+    if (eventType && eventType !== 'all' && VALID_EVENT_TYPES.includes(eventType as EventType)) {
+      whereConditions.push(eq(activityLogs.eventType, eventType as EventType))
+    }
+
+    if (search) {
+      whereConditions.push(
+        or(
+          like(users.name, `%${search}%`),
+          like(users.email, `%${search}%`),
+          like(activityLogs.macAddress, `%${search}%`),
+          like(activityLogs.ipAddress, `%${search}%`)
+        )
+      )
+    }
+
+    if (startDate) {
+      const start = new Date(startDate)
+      start.setHours(0, 0, 0, 0)
+      whereConditions.push(gte(activityLogs.createdAt, start))
+    }
+
+    if (endDate) {
+      const end = new Date(endDate)
+      end.setHours(23, 59, 59, 999)
+      whereConditions.push(lte(activityLogs.createdAt, end))
+    }
+
+    const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined
+
+    // Get total count
+    const countResult = db
+      .select({ count: sql<number>`count(*)` })
+      .from(activityLogs)
+      .leftJoin(users, eq(activityLogs.userId, users.id))
+      .where(whereClause)
+      .get()
+    const total = countResult?.count || 0
+
+    // Get paginated events
     const events = db
       .select({
         id: activityLogs.id,
@@ -41,6 +114,7 @@ export async function GET(request: NextRequest) {
       })
       .from(activityLogs)
       .leftJoin(users, eq(activityLogs.userId, users.id))
+      .where(whereClause)
       .orderBy(desc(activityLogs.createdAt))
       .limit(limit)
       .offset(offset)
@@ -52,20 +126,34 @@ export async function GET(request: NextRequest) {
         ? descriptionFn(event.details || undefined)
         : `${event.type || 'Unknown event'}`
 
+      let parsedDetails = {}
+      try {
+        parsedDetails = event.details ? JSON.parse(event.details) : {}
+      } catch {
+        // Ignore parse errors
+      }
+
       return {
         id: event.id,
         type: event.type,
         description,
         timestamp: event.createdAt?.toISOString() || new Date().toISOString(),
         user: event.userName || event.userEmail || undefined,
+        userEmail: event.userEmail,
         mac: event.macAddress,
         ip: event.ipAddress,
+        details: parsedDetails,
       }
     })
 
     return NextResponse.json({
       events: formattedEvents,
-      total: events.length,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
     })
   } catch (error) {
     console.error('Activity API error:', error)
