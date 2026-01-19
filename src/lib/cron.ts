@@ -145,7 +145,7 @@ export async function cacheDPIStats(): Promise<SyncResult> {
       // Calculate total bytes from DPI categories
       let totalRx = 0
       let totalTx = 0
-      const domains: string[] = []
+      const topApps: Array<{ app: number; cat: number; rx_bytes: number; tx_bytes: number }> = []
 
       if (dpiStats?.by_cat) {
         for (const cat of dpiStats.by_cat) {
@@ -154,11 +154,18 @@ export async function cacheDPIStats(): Promise<SyncResult> {
         }
       }
 
+      // Collect top applications by bandwidth (limited to top 10)
+      if (dpiStats?.by_app) {
+        topApps.push(...dpiStats.by_app.slice(0, 10))
+      }
+
       // Use client's byte counts if DPI stats aren't available
       const bytesReceived = totalRx || client.rx_bytes || 0
       const bytesSent = totalTx || client.tx_bytes || 0
 
       // Insert stats record
+      // Note: 'domains' field stores top DPI applications as JSON (app/category IDs)
+      // Actual domain names would require Unifi firewall logs which aren't easily accessible
       try {
         db.insert(networkStats)
           .values({
@@ -166,7 +173,7 @@ export async function cacheDPIStats(): Promise<SyncResult> {
             timestamp: now,
             bytesReceived,
             bytesSent,
-            domains: domains.length > 0 ? JSON.stringify(domains) : null,
+            domains: topApps.length > 0 ? JSON.stringify(topApps) : null,
             signalStrength: client.rssi,
             apMacAddress: client.ap_mac,
           })
