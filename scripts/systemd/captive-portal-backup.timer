@@ -1,0 +1,16 @@
+[Unit]
+Description=Daily Captive Portal Database Backup
+Requires=captive-portal-backup.service
+
+[Timer]
+# Run daily at 2 AM
+OnCalendar=*-*-* 02:00:00
+# Run 15 minutes after boot if missed
+OnBootSec=15min
+# If system was off, run backup as soon as possible
+Persistent=true
+# Add random delay to prevent all backups running simultaneously (e.g., multiple servers)
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

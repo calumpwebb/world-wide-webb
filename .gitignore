@@ -32,6 +32,9 @@ yarn-error.log*
 # Database
 /data/
 
+# Backups
+/backups/
+
 # Ralph Loop
 .ralph/
 

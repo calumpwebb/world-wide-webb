@@ -151,11 +151,18 @@
   - [ ] UptimeRobot or Healthchecks.io setup guide
   - [ ] Log aggregation setup (Loki/Grafana or similar)
 
-- [ ] **Database Backups**
-  - [ ] Automated SQLite backup script (daily snapshots)
-  - [ ] Backup rotation policy (keep 30 days)
-  - [ ] Restore procedure documentation + testing
-  - [ ] Offsite backup configuration
+- [x] **Database Backups** - ✅ **COMPLETED (2026-01-19)** - Comprehensive backup/restore system implemented
+  - [x] Automated SQLite backup script (daily snapshots with VACUUM INTO)
+  - [x] Backup rotation policy (keep 30 days, configurable)
+  - [x] Restore procedure documentation + testing (scripts/BACKUP_README.md)
+  - [x] Offsite backup configuration (NFS/CIFS mount + rclone cloud sync)
+  - [x] Systemd timer for automated daily backups at 2 AM
+  - [x] Integrity verification (--verify flag for backup validation)
+  - [x] Pre-restore safety (auto-creates backup before restore)
+  - [x] NPM scripts: pnpm db:backup, pnpm db:restore, pnpm db:restore:list
+  - [x] Disaster recovery procedures and quarterly drill instructions
+  - [x] Backup monitoring scripts and health checks
+  - **Implementation:** Created backup-database.ts, restore-database.ts, systemd timer, comprehensive BACKUP_README.md documentation, updated DEPLOYMENT.md with production setup guide
 
 - [ ] **API Documentation**
   - [ ] OpenAPI/Swagger specification

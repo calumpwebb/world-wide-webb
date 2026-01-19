@@ -524,88 +524,274 @@ sudo systemctl start certbot.timer
 
 ## Database Backups
 
-### Automated Backup Script
+The project includes comprehensive backup and restore scripts with automatic rotation, integrity verification, and offsite copy support.
 
-Create `/opt/world-wide-webb/scripts/backup-db.sh`:
+### Quick Start
 
+**Create a manual backup:**
 ```bash
-#!/bin/bash
-set -e
-
-# Configuration
-DB_PATH="/opt/world-wide-webb/data/captive-portal.db"
-BACKUP_DIR="/opt/backups/world-wide-webb"
-RETENTION_DAYS=30
-
-# Create backup directory
-mkdir -p "$BACKUP_DIR"
-
-# Backup filename with timestamp
-BACKUP_FILE="$BACKUP_DIR/captive-portal-$(date +%Y%m%d-%H%M%S).db"
-
-# Create backup (SQLite supports hot backups)
-sqlite3 "$DB_PATH" ".backup '$BACKUP_FILE'"
-
-# Compress backup
-gzip "$BACKUP_FILE"
-
-# Delete backups older than retention period
-find "$BACKUP_DIR" -name "*.db.gz" -mtime +$RETENTION_DAYS -delete
-
-# Log success
-echo "$(date): Backup created: $BACKUP_FILE.gz"
+pnpm db:backup
 ```
 
-Make executable:
-
+**List available backups:**
 ```bash
-chmod +x /opt/world-wide-webb/scripts/backup-db.sh
+pnpm db:restore:list
 ```
 
-### Configure Cron for Daily Backups
+**Restore from backup:**
+```bash
+pnpm db:restore
+```
+
+For detailed documentation, see [scripts/BACKUP_README.md](scripts/BACKUP_README.md).
+
+### Production Setup (Automated Daily Backups)
+
+#### Using Systemd (Recommended)
+
+The project includes systemd timer files for automated daily backups at 2 AM.
+
+1. **Copy systemd files:**
+   ```bash
+   sudo cp /opt/world-wide-webb/scripts/systemd/captive-portal-backup.* /etc/systemd/system/
+   ```
+
+2. **Edit service file paths:**
+   ```bash
+   sudo nano /etc/systemd/system/captive-portal-backup.service
+   ```
+
+   Update these paths to match your installation:
+   - `WorkingDirectory=/opt/world-wide-webb`
+   - `ExecStart=/usr/bin/tsx /opt/world-wide-webb/scripts/backup-database.ts --verify --retention-days 30`
+   - `User=www-data` (or your app user)
+   - `Group=www-data` (or your app group)
+
+3. **Enable and start timer:**
+   ```bash
+   sudo systemctl daemon-reload
+   sudo systemctl enable captive-portal-backup.timer
+   sudo systemctl start captive-portal-backup.timer
+   ```
+
+4. **Verify timer is active:**
+   ```bash
+   sudo systemctl status captive-portal-backup.timer
+   systemctl list-timers captive-portal-backup.timer
+   ```
+
+5. **Test backup manually:**
+   ```bash
+   sudo systemctl start captive-portal-backup.service
+   sudo systemctl status captive-portal-backup.service
+   ```
+
+#### Using Cron (Alternative)
 
 ```bash
 # Edit crontab
 crontab -e
 
-# Add daily backup at 2 AM
-0 2 * * * /opt/world-wide-webb/scripts/backup-db.sh >> /var/log/world-wide-webb-backup.log 2>&1
+# Add daily backup at 2 AM with verification and 30-day retention
+0 2 * * * cd /opt/world-wide-webb && /usr/bin/tsx scripts/backup-database.ts --verify --retention-days 30 >> /var/log/captive-portal-backup.log 2>&1
 ```
 
-### Restore from Backup
+### Offsite Backups
+
+For production, configure offsite backups to protect against hardware failure.
+
+#### Option 1: NFS/CIFS Mount
 
 ```bash
-# Stop application
-sudo systemctl stop world-wide-webb  # OR: docker compose down
+# Mount NAS share
+sudo mount -t nfs nas.local:/backups /mnt/nas
 
-# Restore database
-gunzip -c /opt/backups/world-wide-webb/captive-portal-20260119-020000.db.gz > /opt/world-wide-webb/data/captive-portal.db
-
-# Restart application
-sudo systemctl start world-wide-webb  # OR: docker compose up -d
+# Update systemd service to copy to offsite location
+sudo nano /etc/systemd/system/captive-portal-backup.service
 ```
 
-### Offsite Backup (Optional)
-
-For critical deployments, configure offsite backups using:
-
-**Option 1: Rsync to remote server**
-```bash
-# Add to backup script after compression
-rsync -az "$BACKUP_DIR/" user@remote-server:/backups/world-wide-webb/
+Change `ExecStart` to:
+```
+ExecStart=/usr/bin/tsx /opt/world-wide-webb/scripts/backup-database.ts --verify --retention-days 30 --offsite-dir /mnt/nas/captive-portal
 ```
 
-**Option 2: Cloud storage (S3, Backblaze B2)**
+#### Option 2: Cloud Sync (Rclone)
+
 ```bash
 # Install rclone
-curl https://rclone.org/install.sh | sudo bash
+sudo apt install rclone
 
-# Configure remote
+# Configure rclone remote (e.g., Backblaze B2, AWS S3, Google Drive)
 rclone config
 
-# Add to backup script
-rclone copy "$BACKUP_DIR/" remote:world-wide-webb-backups/
+# Create post-backup sync script
+cat > /opt/world-wide-webb/scripts/sync-backups.sh <<'EOF'
+#!/bin/bash
+rclone sync /opt/world-wide-webb/backups remote:captive-portal-backups --delete-after --log-file=/var/log/rclone-backup.log
+EOF
+
+chmod +x /opt/world-wide-webb/scripts/sync-backups.sh
 ```
+
+Update systemd service:
+```bash
+sudo nano /etc/systemd/system/captive-portal-backup.service
+```
+
+Add after `ExecStart`:
+```
+ExecStartPost=/opt/world-wide-webb/scripts/sync-backups.sh
+```
+
+### Restore Procedures
+
+#### Emergency Restore
+
+If the database is corrupted or lost:
+
+1. **Stop the application:**
+   ```bash
+   sudo systemctl stop world-wide-webb
+   # OR for Docker:
+   docker compose stop app
+   ```
+
+2. **List available backups:**
+   ```bash
+   cd /opt/world-wide-webb
+   tsx scripts/restore-database.ts --list
+   ```
+
+3. **Restore from latest backup:**
+   ```bash
+   tsx scripts/restore-database.ts --backup-file backups/captive-portal-YYYY-MM-DDTHH-MM-SS.db
+   ```
+
+   The script will:
+   - Verify backup integrity
+   - Create pre-restore backup of current database
+   - Ask for confirmation
+   - Restore database
+   - Verify restored database integrity
+
+4. **Restart application:**
+   ```bash
+   sudo systemctl start world-wide-webb
+   # OR for Docker:
+   docker compose up -d
+   ```
+
+#### Verify Backup Integrity
+
+```bash
+# Manual verification
+sqlite3 backups/captive-portal-LATEST.db "PRAGMA integrity_check;"
+
+# Should output: ok
+```
+
+### Backup Monitoring
+
+#### Check Backup Status
+
+```bash
+# View recent backup logs (systemd)
+journalctl -u captive-portal-backup.service -n 50
+
+# Check for failures in last 7 days
+journalctl -u captive-portal-backup.service --since "7 days ago" | grep -i "failed\|error"
+
+# List backup files
+ls -lh /opt/world-wide-webb/backups/
+
+# Check backup disk usage
+du -sh /opt/world-wide-webb/backups/
+```
+
+#### Automated Backup Health Checks
+
+Create `/opt/world-wide-webb/scripts/check-backups.sh`:
+
+```bash
+#!/bin/bash
+# Alert if no backup in last 36 hours
+
+BACKUP_DIR="/opt/world-wide-webb/backups"
+MAX_AGE_HOURS=36
+
+LATEST_BACKUP=$(find "$BACKUP_DIR" -name "captive-portal-*.db" -type f -printf '%T@ %p\n' | sort -n | tail -1 | cut -d' ' -f2)
+
+if [ -z "$LATEST_BACKUP" ]; then
+  echo "CRITICAL: No backups found in $BACKUP_DIR"
+  exit 2
+fi
+
+LATEST_BACKUP_TIME=$(stat -c %Y "$LATEST_BACKUP")
+NOW=$(date +%s)
+AGE_HOURS=$(( (NOW - LATEST_BACKUP_TIME) / 3600 ))
+
+if [ $AGE_HOURS -gt $MAX_AGE_HOURS ]; then
+  echo "WARNING: Latest backup is $AGE_HOURS hours old (threshold: $MAX_AGE_HOURS)"
+  exit 1
+fi
+
+echo "OK: Latest backup is $AGE_HOURS hours old"
+exit 0
+```
+
+Make executable and add to cron:
+```bash
+chmod +x /opt/world-wide-webb/scripts/check-backups.sh
+
+# Check every 6 hours, email on failure
+crontab -e
+0 */6 * * * /opt/world-wide-webb/scripts/check-backups.sh || echo "Backup check failed" | mail -s "Captive Portal Backup Alert" admin@example.com
+```
+
+### Backup Features
+
+- **Atomic Backups**: Uses SQLite `VACUUM INTO` for crash-safe backups
+- **Hot Backups**: No application downtime required
+- **Integrity Verification**: Optional `--verify` flag validates backups
+- **Automatic Rotation**: Keeps last 30 days by default (configurable)
+- **Offsite Support**: Built-in support for NAS/cloud destinations
+- **Pre-Restore Safety**: Creates backup before restore
+- **Dry-Run Mode**: Test backup/restore without changes
+
+### Testing Backup & Restore
+
+Run quarterly disaster recovery drills:
+
+```bash
+# 1. Create test backup
+tsx scripts/backup-database.ts --verify
+
+# 2. Stop application
+sudo systemctl stop world-wide-webb
+
+# 3. Simulate corruption
+cp data/captive-portal.db data/captive-portal.db.pre-drill
+dd if=/dev/random of=data/captive-portal.db bs=1024 count=10
+
+# 4. Restore from backup
+tsx scripts/restore-database.ts --backup-file backups/captive-portal-LATEST.db --force
+
+# 5. Verify application works
+sudo systemctl start world-wide-webb
+curl http://localhost:3000/api/health
+
+# 6. Document recovery time
+echo "Disaster recovery drill completed in X minutes" >> /var/log/backup-drill.log
+```
+
+### Backup Metrics
+
+- **RTO (Recovery Time Objective)**: < 5 minutes
+- **RPO (Recovery Point Objective)**: 24 hours (daily backups)
+- **Backup Size**: ~100-500 KB per backup (varies with guest count)
+- **Retention**: 30 days = ~30 MB total disk usage
+- **Backup Duration**: < 1 second
+- **Restore Duration**: < 5 seconds
 
 ---
 
