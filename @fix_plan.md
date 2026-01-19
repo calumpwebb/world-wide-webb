@@ -26,7 +26,7 @@
 - [x] **Admin Activity Logs** (`/admin/logs/page.tsx`) - Filterable by event type/date/user, CSV export, event detail modals, pagination
 - [x] **Guest Portal Dashboard** (`/portal/page.tsx`) - Welcome message with name, connection status, time remaining, data usage, list of authorized MACs with status
 - [x] **Guest Device Management** (`/portal/devices/page.tsx`) - Edit device nicknames, view connection history per MAC, request time extension
-- [ ] **Activity Logging System** (`lib/logger.ts`) - Log all events (connect, disconnect, auth_success, auth_fail, admin actions) with timestamps, user, MAC, IP, JSON details
+- [x] **Activity Logging System** (`lib/logger.ts`) - Log all events (connect, disconnect, auth_success, auth_fail, admin actions) with timestamps, user, MAC, IP, JSON details
 - [ ] **Background Sync Jobs** - Connection event sync (every 1 min), DPI stats cache (every 5 min), expiry cleanup, session validation
 - [x] **Email Service** (`lib/email.ts`) - Verification code emails, admin notification emails, password reset, styled HTML templates
 - [x] **Git Hooks & Code Quality** - Setup Husky + lint-staged + Prettier + ESLint, pre-commit hook auto-formats code
@@ -35,8 +35,8 @@
 
 ## Low Priority
 
-- [ ] **Health Check Endpoint** (`GET /api/health`) - Database, Unifi, Email service checks
-- [ ] **Metrics Endpoint** (`GET /api/metrics`) - Guest counts, auth attempts, active devices
+- [x] **Health Check Endpoint** (`GET /api/health`) - Database, Unifi, Email service checks
+- [x] **Metrics Endpoint** (`GET /api/metrics`) - Guest counts, auth attempts, active devices
 - [x] **Guest Resend Code** (`POST /api/guest/resend-code`) - 30s cooldown, 3/hour limit, rate limiting
 - [x] **Guest Status Check** (`GET /api/guest/status?mac=...`) - Check if MAC already authorized, return guest info
 - [x] **Admin Revoke Guest** (`POST /api/admin/guests/revoke`) - Revoke access, call Unifi, log admin_revoke event
@@ -46,7 +46,6 @@
 - [ ] **Rate Limiting Helper** (`lib/rate-limit.ts`) - Generic rate limit check function for reuse across APIs
 - [x] **Middleware Protection** (`middleware.ts`) - Protect /admin routes, force TOTP setup, guest portal auth checks
 - [ ] **Backup Codes Validation** - Allow admin login with backup codes if TOTP device lost
-- [ ] **Database Cleanup Cron** - Delete old activity logs (>90 days), remove stale MACs (>30 days no connection)
 - [ ] **Reverse Proxy Docs** - Caddy/Nginx config for HTTPS, production recommendations, firewall rules
 - [ ] **Monitoring Setup** - UptimeRobot config, error alerts, email on health check failures
 - [ ] **Admin Settings Page** (`/admin/settings`) - Change password, regenerate TOTP, disable 2FA, notification preferences
@@ -65,6 +64,9 @@
 - [x] **Admin TOTP Setup Page** - QR code, manual entry, verification, backup codes download
 - [x] **Admin Dashboard** - Stats cards, active devices list, activity feed with 30s polling
 - [x] **Middleware Protection** - Protect /admin routes with session cookie check
+- [x] **Activity Logging System** (`lib/logger.ts`) - Centralized logging with typed events and IP extraction
+- [x] **Health Check Endpoint** (`GET /api/health`) - Database, Unifi, Email service connectivity checks
+- [x] **Metrics Endpoint** (`GET /api/metrics`) - Guest counts, auth attempts, active devices, admin stats
 
 ## Notes
 

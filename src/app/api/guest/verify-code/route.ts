@@ -1,33 +1,31 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db, verificationCodes, users, guests, activityLogs } from '@/lib/db';
-import { sendAdminNotification } from '@/lib/email';
-import { unifi } from '@/lib/unifi';
-import { eq, and, gt } from 'drizzle-orm';
-import { z } from 'zod';
-import { randomUUID } from 'crypto';
+import { NextRequest, NextResponse } from 'next/server'
+import { db, verificationCodes, users, guests } from '@/lib/db'
+import { sendAdminNotification } from '@/lib/email'
+import { logger } from '@/lib/logger'
+import { unifi } from '@/lib/unifi'
+import { eq, and, gt } from 'drizzle-orm'
+import { z } from 'zod'
+import { randomUUID } from 'crypto'
 
 const requestSchema = z.object({
   email: z.string().email('Invalid email address'),
   code: z.string().length(6, 'Code must be 6 digits').regex(/^\d+$/, 'Code must be numeric'),
-});
+})
 
-const MAX_ATTEMPTS = parseInt(process.env.RATE_LIMIT_CODE_ATTEMPTS || '3');
-const GUEST_AUTH_DAYS = parseInt(process.env.GUEST_AUTH_DURATION_DAYS || '7');
+const MAX_ATTEMPTS = parseInt(process.env.RATE_LIMIT_CODE_ATTEMPTS || '3')
+const GUEST_AUTH_DAYS = parseInt(process.env.GUEST_AUTH_DURATION_DAYS || '7')
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const result = requestSchema.safeParse(body);
+    const body = await request.json()
+    const result = requestSchema.safeParse(body)
 
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error.issues[0].message },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: result.error.issues[0].message }, { status: 400 })
     }
 
-    const { email, code } = result.data;
-    const normalizedEmail = email.toLowerCase().trim();
+    const { email, code } = result.data
+    const normalizedEmail = email.toLowerCase().trim()
 
     // Find the verification code
     const verification = db
@@ -40,22 +38,20 @@ export async function POST(request: NextRequest) {
           gt(verificationCodes.expiresAt, new Date())
         )
       )
-      .get();
+      .get()
 
     if (!verification) {
       // Log failed attempt
-      db.insert(activityLogs)
-        .values({
-          eventType: 'auth_fail',
-          ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
-          details: JSON.stringify({ email: normalizedEmail, reason: 'no_valid_code' }),
-        })
-        .run();
+      logger.authFail({
+        ipAddress: logger.getClientIP(request.headers),
+        email: normalizedEmail,
+        reason: 'no_valid_code',
+      })
 
       return NextResponse.json(
         { error: 'Invalid or expired code. Please request a new one.' },
         { status: 400 }
-      );
+      )
     }
 
     // Check attempt count
@@ -64,12 +60,12 @@ export async function POST(request: NextRequest) {
       db.update(verificationCodes)
         .set({ used: true })
         .where(eq(verificationCodes.id, verification.id))
-        .run();
+        .run()
 
       return NextResponse.json(
         { error: 'Too many attempts. Please request a new code.', expired: true },
         { status: 400 }
-      );
+      )
     }
 
     // Verify the code
@@ -78,38 +74,37 @@ export async function POST(request: NextRequest) {
       db.update(verificationCodes)
         .set({ attempts: (verification.attempts || 0) + 1 })
         .where(eq(verificationCodes.id, verification.id))
-        .run();
+        .run()
 
-      const remainingAttempts = MAX_ATTEMPTS - (verification.attempts || 0) - 1;
+      const remainingAttempts = MAX_ATTEMPTS - (verification.attempts || 0) - 1
 
       // Log failed attempt
-      db.insert(activityLogs)
-        .values({
-          eventType: 'auth_fail',
-          ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
-          details: JSON.stringify({ email: normalizedEmail, reason: 'wrong_code', remainingAttempts }),
-        })
-        .run();
+      logger.authFail({
+        ipAddress: logger.getClientIP(request.headers),
+        email: normalizedEmail,
+        reason: 'wrong_code',
+        remainingAttempts,
+      })
 
       return NextResponse.json(
         {
           error: `Invalid code. ${remainingAttempts} ${remainingAttempts === 1 ? 'attempt' : 'attempts'} remaining.`,
         },
         { status: 400 }
-      );
+      )
     }
 
     // Code is valid - mark as used
     db.update(verificationCodes)
       .set({ used: true })
       .where(eq(verificationCodes.id, verification.id))
-      .run();
+      .run()
 
     // Get or create user
-    let user = db.select().from(users).where(eq(users.email, normalizedEmail)).get();
+    let user = db.select().from(users).where(eq(users.email, normalizedEmail)).get()
 
     if (!user) {
-      const userId = randomUUID();
+      const userId = randomUUID()
       db.insert(users)
         .values({
           id: userId,
@@ -120,26 +115,27 @@ export async function POST(request: NextRequest) {
           createdAt: new Date(),
           updatedAt: new Date(),
         })
-        .run();
-      user = db.select().from(users).where(eq(users.id, userId)).get();
+        .run()
+      user = db.select().from(users).where(eq(users.id, userId)).get()
     }
 
     if (!user) {
-      throw new Error('Failed to create user');
+      throw new Error('Failed to create user')
     }
 
     // Calculate expiration
-    const now = new Date();
-    const expiresAt = new Date(now.getTime() + GUEST_AUTH_DAYS * 24 * 60 * 60 * 1000);
-    const macAddress = verification.macAddress || '';
-    const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined;
+    const now = new Date()
+    const expiresAt = new Date(now.getTime() + GUEST_AUTH_DAYS * 24 * 60 * 60 * 1000)
+    const macAddress = verification.macAddress || ''
+    const ipAddress =
+      request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined
 
     // Check if this MAC already exists for the user
     const existingGuest = db
       .select()
       .from(guests)
       .where(and(eq(guests.userId, user.id), eq(guests.macAddress, macAddress)))
-      .get();
+      .get()
 
     if (existingGuest) {
       // Update existing authorization
@@ -151,7 +147,7 @@ export async function POST(request: NextRequest) {
           ipAddress,
         })
         .where(eq(guests.id, existingGuest.id))
-        .run();
+        .run()
     } else {
       // Create new guest authorization
       db.insert(guests)
@@ -164,39 +160,34 @@ export async function POST(request: NextRequest) {
           expiresAt,
           authCount: 1,
         })
-        .run();
+        .run()
     }
 
     // Authorize MAC on Unifi Controller (if MAC is provided)
-    let unifiAuthorized = false;
+    let unifiAuthorized = false
     if (macAddress) {
       try {
-        unifiAuthorized = await unifi.authorizeGuest(macAddress, GUEST_AUTH_DAYS * 24 * 60);
+        unifiAuthorized = await unifi.authorizeGuest(macAddress, GUEST_AUTH_DAYS * 24 * 60)
         if (!unifiAuthorized) {
-          console.warn('Unifi authorization failed for MAC:', macAddress);
+          console.warn('Unifi authorization failed for MAC:', macAddress)
         }
       } catch (err) {
         // Log but don't fail - guest can still be tracked in our DB
-        console.error('Unifi authorization error:', err);
+        console.error('Unifi authorization error:', err)
       }
     }
 
     // Log success
-    db.insert(activityLogs)
-      .values({
-        userId: user.id,
-        macAddress,
-        eventType: 'auth_success',
-        ipAddress,
-        details: JSON.stringify({
-          name: verification.name,
-          email: normalizedEmail,
-          expiresAt: expiresAt.toISOString(),
-          isReturning: !!existingGuest,
-          unifiAuthorized,
-        }),
-      })
-      .run();
+    logger.authSuccess({
+      userId: user.id,
+      macAddress,
+      ipAddress,
+      email: normalizedEmail,
+      name: verification.name || undefined,
+      expiresAt,
+      isReturning: !!existingGuest,
+      unifiAuthorized,
+    })
 
     // Send admin notification (fire and forget)
     sendAdminNotification({
@@ -206,7 +197,7 @@ export async function POST(request: NextRequest) {
       ipAddress,
       authorizedAt: now,
       expiresAt,
-    }).catch((err) => console.error('Failed to send admin notification:', err));
+    }).catch((err) => console.error('Failed to send admin notification:', err))
 
     return NextResponse.json({
       success: true,
@@ -215,12 +206,9 @@ export async function POST(request: NextRequest) {
         name: user.name,
         email: user.email,
       },
-    });
+    })
   } catch (error) {
-    console.error('Error in verify-code:', error);
-    return NextResponse.json(
-      { error: 'Verification failed. Please try again.' },
-      { status: 500 }
-    );
+    console.error('Error in verify-code:', error)
+    return NextResponse.json({ error: 'Verification failed. Please try again.' }, { status: 500 })
   }
 }

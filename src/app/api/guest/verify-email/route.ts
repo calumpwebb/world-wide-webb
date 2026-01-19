@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { db, verificationCodes, rateLimits } from '@/lib/db'
 import { sendVerificationEmail, generateVerificationCode } from '@/lib/email'
+import { logger } from '@/lib/logger'
 import { eq, and } from 'drizzle-orm'
 
 const requestSchema = z.object({
@@ -88,6 +89,14 @@ export async function POST(request: NextRequest) {
 
     // Send verification email
     await sendVerificationEmail(email, code, name)
+
+    // Log code sent event
+    logger.codeSent({
+      ipAddress: logger.getClientIP(request.headers),
+      email,
+      name,
+      macAddress: macAddress || undefined,
+    })
 
     return NextResponse.json({
       success: true,

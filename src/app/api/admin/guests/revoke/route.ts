@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db, guests, activityLogs, users } from '@/lib/db'
+import { db, guests, users } from '@/lib/db'
+import { logger } from '@/lib/logger'
 import { unifi } from '@/lib/unifi'
 import { eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
@@ -62,20 +63,14 @@ export async function POST(request: NextRequest) {
         db.update(guests).set({ expiresAt: now }).where(eq(guests.id, guest.id)).run()
 
         // Log the revocation
-        db.insert(activityLogs)
-          .values({
-            userId: guest.userId,
-            macAddress: guest.macAddress,
-            eventType: 'admin_revoke',
-            ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
-            details: JSON.stringify({
-              guestId: guest.id,
-              userName: guest.userName,
-              userEmail: guest.userEmail,
-              revokedAt: now.toISOString(),
-            }),
-          })
-          .run()
+        logger.adminRevoke({
+          guestUserId: guest.userId,
+          macAddress: guest.macAddress || undefined,
+          ipAddress: logger.getClientIP(request.headers),
+          guestId: guest.id,
+          userName: guest.userName || undefined,
+          userEmail: guest.userEmail || undefined,
+        })
 
         results.revoked++
       } catch (error) {
