@@ -203,8 +203,10 @@ After completing this cycle:
 EOF
 
 # Replace placeholders with actual values
+# Escape special characters in CYCLE_NAME for sed
+CYCLE_NAME_ESCAPED=$(echo "$CYCLE_NAME" | sed 's/[&/\]/\\&/g')
 sed -i '' "s/\${CYCLE_NUM}/$CYCLE_NUM/g" "$CYCLE_FILE"
-sed -i '' "s/\${CYCLE_NAME}/$CYCLE_NAME/g" "$CYCLE_FILE"
+sed -i '' "s/\${CYCLE_NAME}/$CYCLE_NAME_ESCAPED/g" "$CYCLE_FILE"
 
 echo "✅ Created: $CYCLE_FILE"
 echo ""
