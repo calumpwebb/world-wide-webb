@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Shield, Loader2, Eye, EyeOff } from 'lucide-react'
+import { Shield, Loader2, Eye, EyeOff, Key } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -26,6 +26,8 @@ export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [requiresTOTP, setRequiresTOTP] = useState(false)
   const [totpCode, setTotpCode] = useState('')
+  const [useBackupCode, setUseBackupCode] = useState(false)
+  const [backupCode, setBackupCode] = useState('')
 
   const {
     register,
@@ -47,7 +49,10 @@ export default function AdminLoginPage() {
 
       if (result.error) {
         // Check if TOTP is required
-        if (result.error.message?.includes('two-factor') || result.error.code === 'TWO_FACTOR_REQUIRED') {
+        if (
+          result.error.message?.includes('two-factor') ||
+          result.error.code === 'TWO_FACTOR_REQUIRED'
+        ) {
           setRequiresTOTP(true)
           setIsLoading(false)
           return
@@ -106,7 +111,102 @@ export default function AdminLoginPage() {
     }
   }
 
+  const handleBackupCodeSubmit = async () => {
+    if (backupCode.length < 8) return
+
+    setIsLoading(true)
+    setError('')
+
+    try {
+      const result = await authClient.twoFactor.verifyBackupCode({
+        code: backupCode,
+      })
+
+      if (result.error) {
+        setError(result.error.message || 'Invalid backup code')
+        setBackupCode('')
+        setIsLoading(false)
+        return
+      }
+
+      router.push('/admin')
+    } catch {
+      setError('Verification failed. Please try again.')
+      setBackupCode('')
+      setIsLoading(false)
+    }
+  }
+
   if (requiresTOTP) {
+    // Backup code mode
+    if (useBackupCode) {
+      return (
+        <main className="flex min-h-screen flex-col items-center justify-center p-4">
+          <Card className="w-full max-w-md border-border bg-card">
+            <CardHeader className="space-y-4 text-center">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                <Key className="h-8 w-8 text-primary" />
+              </div>
+              <CardTitle className="text-2xl font-semibold">Recovery Code</CardTitle>
+              <CardDescription className="text-muted-foreground">
+                Enter one of your backup codes to sign in
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="backup">Backup Code</Label>
+                <Input
+                  id="backup"
+                  type="text"
+                  placeholder="Enter backup code"
+                  value={backupCode}
+                  onChange={(e) => {
+                    setBackupCode(e.target.value.trim())
+                  }}
+                  disabled={isLoading}
+                  className="h-14 text-center font-mono text-lg"
+                />
+              </div>
+
+              {error && (
+                <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                  {error}
+                </div>
+              )}
+
+              <Button
+                onClick={handleBackupCodeSubmit}
+                className="w-full"
+                disabled={backupCode.length < 8 || isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  'Verify Backup Code'
+                )}
+              </Button>
+
+              <Button
+                variant="ghost"
+                className="w-full"
+                onClick={() => {
+                  setUseBackupCode(false)
+                  setBackupCode('')
+                  setError('')
+                }}
+              >
+                Use authenticator app instead
+              </Button>
+            </CardContent>
+          </Card>
+        </main>
+      )
+    }
+
+    // TOTP mode (default)
     return (
       <main className="flex min-h-screen flex-col items-center justify-center p-4">
         <Card className="w-full max-w-md border-border bg-card">
@@ -163,6 +263,28 @@ export default function AdminLoginPage() {
               )}
             </Button>
 
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">or</span>
+              </div>
+            </div>
+
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                setUseBackupCode(true)
+                setTotpCode('')
+                setError('')
+              }}
+            >
+              <Key className="mr-2 h-4 w-4" />
+              Lost your device? Use backup code
+            </Button>
+
             <Button
               variant="ghost"
               className="w-full"
@@ -204,9 +326,7 @@ export default function AdminLoginPage() {
                 disabled={isLoading}
                 {...register('email')}
               />
-              {errors.email && (
-                <p className="text-sm text-destructive">{errors.email.message}</p>
-              )}
+              {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
             </div>
 
             <div className="space-y-2">
@@ -259,9 +379,7 @@ export default function AdminLoginPage() {
         </CardContent>
       </Card>
 
-      <p className="mt-8 text-center text-xs text-muted-foreground">
-        World Wide Webb Admin Panel
-      </p>
+      <p className="mt-8 text-center text-xs text-muted-foreground">World Wide Webb Admin Panel</p>
     </main>
   )
 }

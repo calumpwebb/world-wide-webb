@@ -1,7 +1,7 @@
-import { betterAuth } from 'better-auth';
-import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { twoFactor } from 'better-auth/plugins/two-factor';
-import { db } from './db';
+import { betterAuth } from 'better-auth'
+import { drizzleAdapter } from 'better-auth/adapters/drizzle'
+import { twoFactor } from 'better-auth/plugins/two-factor'
+import { db } from './db'
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -21,6 +21,10 @@ export const auth = betterAuth({
       otpOptions: {
         period: 30,
         digits: 6,
+      },
+      backupCodeOptions: {
+        amount: 10, // Generate 10 backup codes
+        length: 10, // 10 characters each
       },
     }),
   ],
@@ -44,7 +48,7 @@ export const auth = betterAuth({
       },
     },
   },
-});
+})
 
-export type Session = typeof auth.$Infer.Session;
-export type User = typeof auth.$Infer.Session.user;
+export type Session = typeof auth.$Infer.Session
+export type User = typeof auth.$Infer.Session.user
