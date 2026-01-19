@@ -15,7 +15,7 @@
 - [x] **Guest Landing Page** (`/page.tsx` in `(guest)` route) - Email entry form, name field, terms checkbox, dark mode UI (black bg), form validation with Zod, auto-detect MAC from URL
 - [x] **Guest Verification Page** (`/verify/page.tsx`) - Display 6-digit code input (one-time-code autocomplete), resend code button with cooldown, error handling, rate limit messages
 - [x] **Guest Success Page** (`/success/page.tsx`) - Welcome message, show expiry countdown, auto-close after 3s (for iOS captive portal), returning guest message
-- [ ] **Admin Login Page** (`/admin/login/page.tsx`) - Email + password form, forgot password link, dark mode, Better Auth integration, redirect to TOTP setup if not configured
+- [x] **Admin Login Page** (`/admin/login/page.tsx`) - Email + password form, forgot password link, dark mode, Better Auth integration, redirect to TOTP setup if not configured
 
 ## Medium Priority
 
