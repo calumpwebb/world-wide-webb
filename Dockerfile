@@ -43,6 +43,9 @@ RUN SQLITE_DIR=$(find node_modules/.pnpm -type d -name "better-sqlite3" -path "*
 # Copy source code
 COPY . .
 
+# Create data directory for database (needed during Next.js build)
+RUN mkdir -p /app/data
+
 # Build arguments for environment
 ARG NEXT_PUBLIC_APP_URL=http://localhost:3000
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
