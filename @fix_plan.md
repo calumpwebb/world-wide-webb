@@ -80,6 +80,21 @@
 
 ### 🔴 P0 - Critical (Must Fix Before Production)
 
+- [x] **Force Password Change on First Login** - ✅ **COMPLETED (2026-01-19)** - Implemented mandatory password change for new admin users
+  - [x] Added mustChangePassword boolean field to users table schema
+  - [x] Generated and applied database migration (0001_gray_butterfly.sql)
+  - [x] Created /admin/change-password page with password validation and confirmation
+  - [x] Created /api/admin/update-password-flag endpoint to clear the flag after successful password change
+  - [x] Updated seed-admin.ts to set mustChangePassword=true for new admin accounts
+  - [x] Updated admin login page to redirect to change-password before TOTP setup
+  - [x] Updated all admin pages (dashboard, settings, setup-2fa, guests, network, logs) to check mustChangePassword
+  - [x] Updated middleware to allow access to change-password page
+  - **Security:** Admins cannot access any admin functionality until they change their password
+  - **UX:** Clear warning message and password strength requirements (min 12 chars)
+  - **Validation:** New password must differ from current password and match confirmation
+  - **Flow:** Login → Password Change (if required) → TOTP Setup (if needed) → Dashboard
+  - All 39 unit tests passing, production build successful
+
 - [x] **Test Coverage** - ✅ **COMPLETED (2026-01-19)** - Unit tests and E2E test infrastructure implemented
   - [x] Set up Vitest + @testing-library/react + @testing-library/jest-dom
   - [x] Set up Playwright for E2E tests
@@ -231,7 +246,32 @@
 ## Notes
 
 ### Recent Enhancements (2026-01-19 - Latest)
-- **Password Reset Feature** (2026-01-19 Latest): Implemented complete admin password reset flow
+- **Force Password Change on First Login** (2026-01-19 Latest): Implemented mandatory password change for new admin users
+  - **Database Schema**: Added `mustChangePassword` boolean field to users table with migration
+  - **Change Password Page** (src/app/admin/change-password/page.tsx):
+    - Three-step form: current password, new password, confirmation
+    - Password visibility toggle for all three fields
+    - Validation: min 12 chars, new password must differ from current
+    - Clear warning UI with AlertTriangle icon
+    - Prevents access to admin panel until password is changed
+  - **API Route** (src/app/api/admin/update-password-flag/route.ts):
+    - POST endpoint to clear mustChangePassword flag
+    - Uses requireAuth() to validate session (allows pre-2FA users)
+    - Verifies userId matches authenticated user
+  - **Login Flow Updates**:
+    - Admin login checks mustChangePassword after successful authentication
+    - Redirects to change-password BEFORE TOTP verification if flag is set
+    - Also checks after TOTP/backup code verification
+  - **Admin Page Protection**: All admin pages check mustChangePassword and redirect
+    - Dashboard, settings, setup-2fa, guests, network, logs all updated
+    - Consistent auth flow: check session → check role → check mustChangePassword → check TOTP
+  - **Middleware Update**: Added change-password to allowed routes (no auth redirect)
+  - **Seed Script**: New admin users created with mustChangePassword=true
+  - **Security Flow**: Login → Force Password Change → TOTP Setup → Admin Dashboard
+  - All 39 unit tests passing, production build successful
+  - Files changed: 13 (schema, migration, new page, API route, middleware, 7 admin pages, seed script)
+
+- **Password Reset Feature** (2026-01-19): Implemented complete admin password reset flow
   - **Better Auth Configuration**: Added `sendResetPassword` callback with 1-hour token expiry (`resetPasswordTokenExpiresIn: 3600`)
   - **Email Template**: Created `sendPasswordResetEmail()` in lib/email.ts with dark-themed HTML
   - **Forgot Password Page** (src/app/admin/forgot-password/page.tsx):

@@ -192,10 +192,22 @@ function NetworkMonitoringContent() {
     const checkAuth = async () => {
       try {
         const session = await authClient.getSession()
-        const user = session.data?.user as { role?: string; twoFactorEnabled?: boolean } | undefined
+        const user = session.data?.user as
+          | { role?: string; twoFactorEnabled?: boolean; mustChangePassword?: boolean }
+          | undefined
 
-        if (!session.data?.user || user?.role !== 'admin' || !user?.twoFactorEnabled) {
+        if (!session.data?.user || user?.role !== 'admin') {
           router.push('/admin/login')
+          return
+        }
+
+        if (user?.mustChangePassword) {
+          router.push('/admin/change-password')
+          return
+        }
+
+        if (!user?.twoFactorEnabled) {
+          router.push('/admin/setup-2fa')
           return
         }
 

@@ -49,6 +49,7 @@ async function seed() {
       role: 'admin',
       emailVerified: true,
       twoFactorEnabled: false,
+      mustChangePassword: true, // Force password change on first login
       createdAt: new Date(),
       updatedAt: new Date(),
     })

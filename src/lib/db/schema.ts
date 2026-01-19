@@ -12,6 +12,7 @@ export const users = sqliteTable('user', {
     .default('guest'),
   twoFactorEnabled: integer('twoFactorEnabled', { mode: 'boolean' }).default(false),
   twoFactorSecret: text('twoFactorSecret'), // TOTP secret (admin only)
+  mustChangePassword: integer('mustChangePassword', { mode: 'boolean' }).default(false), // Force password change on next login
   createdAt: integer('createdAt', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   updatedAt: integer('updatedAt', { mode: 'timestamp' }).$defaultFn(() => new Date()),
 })

@@ -65,11 +65,19 @@ export default function AdminLoginPage() {
 
       // Check if user is admin - role is stored as additional field
       const session = await authClient.getSession()
-      const user = session.data?.user as { role?: string; twoFactorEnabled?: boolean } | undefined
+      const user = session.data?.user as
+        | { role?: string; twoFactorEnabled?: boolean; mustChangePassword?: boolean }
+        | undefined
       if (user?.role !== 'admin') {
         await authClient.signOut()
         setError('Access denied. Admin privileges required.')
         setIsLoading(false)
+        return
+      }
+
+      // Check if password must be changed (highest priority)
+      if (user?.mustChangePassword) {
+        router.push('/admin/change-password')
         return
       }
 
@@ -104,6 +112,14 @@ export default function AdminLoginPage() {
         return
       }
 
+      // Check if password must be changed after TOTP verification
+      const session = await authClient.getSession()
+      const user = session.data?.user as { mustChangePassword?: boolean } | undefined
+      if (user?.mustChangePassword) {
+        router.push('/admin/change-password')
+        return
+      }
+
       router.push('/admin')
     } catch {
       setError('Verification failed. Please try again.')
@@ -127,6 +143,14 @@ export default function AdminLoginPage() {
         setError(result.error.message || 'Invalid backup code')
         setBackupCode('')
         setIsLoading(false)
+        return
+      }
+
+      // Check if password must be changed after backup code verification
+      const session = await authClient.getSession()
+      const user = session.data?.user as { mustChangePassword?: boolean } | undefined
+      if (user?.mustChangePassword) {
+        router.push('/admin/change-password')
         return
       }
 

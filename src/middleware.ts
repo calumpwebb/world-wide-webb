@@ -25,9 +25,14 @@ export async function middleware(request: NextRequest) {
   // Get session cookie (optimistic check only - NOT secure on its own)
   const sessionToken = request.cookies.get('better-auth.session_token')?.value
 
-  // Check if it's an admin route (but not login or setup-2fa)
+  // Check if it's an admin route (but not login, setup-2fa, change-password, forgot-password, or reset-password)
   const isAdminRoute =
-    pathname.startsWith('/admin') && pathname !== '/admin/login' && pathname !== '/admin/setup-2fa'
+    pathname.startsWith('/admin') &&
+    pathname !== '/admin/login' &&
+    pathname !== '/admin/setup-2fa' &&
+    pathname !== '/admin/change-password' &&
+    pathname !== '/admin/forgot-password' &&
+    !pathname.startsWith('/admin/reset-password')
 
   if (isAdminRoute) {
     if (!sessionToken) {

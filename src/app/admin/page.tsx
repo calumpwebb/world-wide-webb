@@ -119,7 +119,9 @@ export default function AdminDashboard() {
     const checkAuth = async () => {
       try {
         const session = await authClient.getSession()
-        const user = session.data?.user as { role?: string; twoFactorEnabled?: boolean } | undefined
+        const user = session.data?.user as
+          | { role?: string; twoFactorEnabled?: boolean; mustChangePassword?: boolean }
+          | undefined
 
         if (!session.data?.user) {
           router.push('/admin/login')
@@ -129,6 +131,11 @@ export default function AdminDashboard() {
         if (user?.role !== 'admin') {
           await authClient.signOut()
           router.push('/admin/login')
+          return
+        }
+
+        if (user?.mustChangePassword) {
+          router.push('/admin/change-password')
           return
         }
 

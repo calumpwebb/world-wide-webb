@@ -31,9 +31,17 @@ export default function SetupTOTPPage() {
           return
         }
 
+        // Check if password must be changed first
+        const user = session.data.user as
+          | { twoFactorEnabled?: boolean; mustChangePassword?: boolean }
+          | undefined
+        if (user?.mustChangePassword) {
+          router.push('/admin/change-password')
+          return
+        }
+
         // Check if already has 2FA enabled
-        const user = session.data.user as { twoFactorEnabled?: boolean }
-        if (user.twoFactorEnabled) {
+        if (user?.twoFactorEnabled) {
           router.push('/admin')
           return
         }

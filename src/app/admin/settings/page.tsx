@@ -67,6 +67,7 @@ export default function AdminSettingsPage() {
         | {
             role?: string
             twoFactorEnabled?: boolean
+            mustChangePassword?: boolean
             email?: string
           }
         | undefined
@@ -79,6 +80,11 @@ export default function AdminSettingsPage() {
       if (user?.role !== 'admin') {
         await authClient.signOut()
         router.push('/admin/login')
+        return
+      }
+
+      if (user?.mustChangePassword) {
+        router.push('/admin/change-password')
         return
       }
 
