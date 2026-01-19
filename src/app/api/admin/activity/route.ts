@@ -54,8 +54,17 @@ export async function GET(request: NextRequest) {
   try {
     await requireAdmin()
     const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || String(PAGINATION_DEFAULT_LIMIT))
+
+    // Parse and validate pagination parameters to prevent NaN, negative, or huge values
+    const pageRaw = parseInt(searchParams.get('page') || '1')
+    const limitRaw = parseInt(searchParams.get('limit') || String(PAGINATION_DEFAULT_LIMIT))
+
+    // Ensure page is at least 1 (handle NaN and negative values)
+    const page = Math.max(1, isNaN(pageRaw) ? 1 : pageRaw)
+
+    // Ensure limit is between 1 and 100 (prevent abuse)
+    const limit = Math.min(100, Math.max(1, isNaN(limitRaw) ? PAGINATION_DEFAULT_LIMIT : limitRaw))
+
     const eventType = searchParams.get('type') || ''
     const search = searchParams.get('search') || ''
     const startDate = searchParams.get('startDate') || ''

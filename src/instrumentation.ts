@@ -91,7 +91,50 @@ export async function register() {
     } = await import('./lib/cron-runner')
     const { structuredLogger } = await import('./lib/structured-logger')
 
-    // Validate secrets first
+    /**
+     * Validate database connectivity on startup
+     *
+     * Tests that the database file exists, is readable, and can execute queries.
+     * This ensures we fail fast if the database is unavailable rather than
+     * failing on first request.
+     */
+    const validateDatabase = async () => {
+      try {
+        const { db, users } = await import('./lib/db')
+        const { sql } = await import('drizzle-orm')
+
+        // Test database connection with a simple count query
+        const result = db
+          .select({ count: sql<number>`count(*)` })
+          .from(users)
+          .get()
+
+        if (result === undefined) {
+          throw new Error('Database query returned undefined')
+        }
+
+        return { success: true, error: null }
+      } catch (error) {
+        const errorMsg =
+          error instanceof Error ? error.message : 'Unknown database connection error'
+        return { success: false, error: errorMsg }
+      }
+    }
+
+    // Validate database connectivity first
+    const dbValidation = await validateDatabase()
+    if (!dbValidation.success) {
+      console.error('\n=== DATABASE CONNECTION FAILED ===')
+      console.error(`❌ ${dbValidation.error}`)
+      console.error('===================================\n')
+      throw new Error(
+        `Database connection failed: ${dbValidation.error}. Check that the database file exists and is readable.`
+      )
+    }
+
+    structuredLogger.info('Database connection validated successfully')
+
+    // Validate secrets
     const { errors, warnings, isProduction } = validateSecrets()
 
     if (errors.length > 0) {

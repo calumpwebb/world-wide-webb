@@ -7,6 +7,7 @@ import { eq, and, gt } from 'drizzle-orm'
 import { z } from 'zod'
 import { randomUUID, timingSafeEqual } from 'crypto'
 import { ONE_DAY_MS, CODE_VERIFICATION_MAX_ATTEMPTS_DEFAULT } from '@/lib/constants'
+import { isValidMac } from '@/lib/utils'
 
 const requestSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -54,6 +55,14 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json(
         { error: 'Invalid or expired code. Please request a new one.' },
+        { status: 400 }
+      )
+    }
+
+    // Additional defensive check for code field
+    if (!verification.code || verification.code.length === 0) {
+      return NextResponse.json(
+        { error: 'Invalid verification code. Please request a new one.' },
         { status: 400 }
       )
     }
@@ -159,48 +168,22 @@ export async function POST(request: NextRequest) {
     const ipAddress =
       request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined
 
-    // Check if this MAC already exists for the user
-    const existingGuest = db
-      .select()
-      .from(guests)
-      .where(and(eq(guests.userId, user.id), eq(guests.macAddress, macAddress)))
-      .get()
-
-    try {
-      if (existingGuest) {
-        // Update existing authorization
-        db.update(guests)
-          .set({
-            expiresAt,
-            lastSeen: now,
-            authCount: (existingGuest.authCount || 1) + 1,
-            ipAddress,
-          })
-          .where(eq(guests.id, existingGuest.id))
-          .run()
-      } else {
-        // Create new guest authorization
-        db.insert(guests)
-          .values({
-            userId: user.id,
-            macAddress,
-            ipAddress,
-            deviceInfo: request.headers.get('user-agent') || undefined,
-            authorizedAt: now,
-            expiresAt,
-            authCount: 1,
-          })
-          .run()
-      }
-    } catch (err) {
-      console.error('Failed to create/update guest authorization:', err)
+    // Validate MAC address format if provided
+    if (macAddress && !isValidMac(macAddress)) {
       return NextResponse.json(
-        { error: 'Failed to authorize device. Please try again.' },
-        { status: 500 }
+        { error: 'Invalid MAC address format. Please try again or contact support.' },
+        { status: 400 }
       )
     }
 
-    // Authorize MAC on Unifi Controller (if MAC is provided)
+    if (!macAddress) {
+      console.warn('No MAC address provided - network authorization will be skipped', {
+        email: normalizedEmail,
+      })
+    }
+
+    // CRITICAL: Authorize MAC on Unifi Controller FIRST (before database insert)
+    // This prevents database/network state mismatch where guest is authorized in DB but not on network
     let unifiAuthorized = false
     let unifiError: string | null = null
     if (macAddress) {
@@ -266,6 +249,48 @@ export async function POST(request: NextRequest) {
         // Graceful degradation mode: warn but continue
         unifiError = errorMsg + '. Please reconnect to the network.'
       }
+    }
+
+    // Only save to database AFTER Unifi authorization succeeds (or if offline mode is enabled)
+    // Check if this MAC already exists for the user
+    const existingGuest = db
+      .select()
+      .from(guests)
+      .where(and(eq(guests.userId, user.id), eq(guests.macAddress, macAddress)))
+      .get()
+
+    try {
+      if (existingGuest) {
+        // Update existing authorization
+        db.update(guests)
+          .set({
+            expiresAt,
+            lastSeen: now,
+            authCount: (existingGuest.authCount || 1) + 1,
+            ipAddress,
+          })
+          .where(eq(guests.id, existingGuest.id))
+          .run()
+      } else {
+        // Create new guest authorization
+        db.insert(guests)
+          .values({
+            userId: user.id,
+            macAddress,
+            ipAddress,
+            deviceInfo: request.headers.get('user-agent') || undefined,
+            authorizedAt: now,
+            expiresAt,
+            authCount: 1,
+          })
+          .run()
+      }
+    } catch (err) {
+      console.error('Failed to create/update guest authorization:', err)
+      return NextResponse.json(
+        { error: 'Failed to authorize device. Please try again.' },
+        { status: 500 }
+      )
     }
 
     // Log success
