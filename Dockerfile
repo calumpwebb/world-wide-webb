@@ -25,18 +25,20 @@ RUN pnpm install --frozen-lockfile
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Install build dependencies for native modules
-RUN apk add --no-cache python3 make g++
+# Install build dependencies for native modules (better-sqlite3)
+RUN apk add --no-cache libc6-compat python3 make g++ gcc build-base
+RUN ln -sf /usr/bin/python3 /usr/bin/python
 
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Copy package files and install fresh (rebuilds native modules for this platform)
+# Copy package files and install dependencies
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
-# Force rebuild better-sqlite3 native module from source
-RUN pnpm rebuild better-sqlite3
+# Manually build better-sqlite3 native module for Alpine
+RUN SQLITE_DIR=$(find node_modules/.pnpm -type d -name "better-sqlite3" -path "*/node_modules/better-sqlite3" | head -1) && \
+    cd "$SQLITE_DIR" && npm run build-release
 
 # Copy source code
 COPY . .
