@@ -27,7 +27,7 @@
 - [x] **Guest Portal Dashboard** (`/portal/page.tsx`) - Welcome message with name, connection status, time remaining, data usage, list of authorized MACs with status
 - [x] **Guest Device Management** (`/portal/devices/page.tsx`) - Edit device nicknames, view connection history per MAC, request time extension
 - [x] **Activity Logging System** (`lib/logger.ts`) - Log all events (connect, disconnect, auth_success, auth_fail, admin actions) with timestamps, user, MAC, IP, JSON details
-- [ ] **Background Sync Jobs** - Connection event sync (every 1 min), DPI stats cache (every 5 min), expiry cleanup, session validation
+- [x] **Background Sync Jobs** - Connection event sync (every 1 min), DPI stats cache (every 5 min), expiry cleanup, session validation
 - [x] **Email Service** (`lib/email.ts`) - Verification code emails, admin notification emails, password reset, styled HTML templates
 - [x] **Git Hooks & Code Quality** - Setup Husky + lint-staged + Prettier + ESLint, pre-commit hook auto-formats code
 - [x] **Docker Setup** - Dockerfile + docker-compose.yml with app + Mailpit, SQLite volume persistence, environment configuration
@@ -67,6 +67,7 @@
 - [x] **Activity Logging System** (`lib/logger.ts`) - Centralized logging with typed events and IP extraction
 - [x] **Health Check Endpoint** (`GET /api/health`) - Database, Unifi, Email service connectivity checks
 - [x] **Metrics Endpoint** (`GET /api/metrics`) - Guest counts, auth attempts, active devices, admin stats
+- [x] **Background Sync Jobs** (`lib/cron.ts`) - Connection sync (1 min), DPI cache (5 min), expiry cleanup, session cleanup with Vercel Cron support
 
 ## Notes
 
@@ -140,6 +141,9 @@
 - `Dockerfile` + `docker-compose.yml` - Docker setup
 - `.env.example` - Environment template
 - `schema.prisma` or Drizzle schema - Database definition
+- `lib/cron.ts` - Background sync jobs
+- `api/cron/route.ts` - Cron API endpoint
+- `vercel.json` - Vercel cron configuration
 
 ### Testing Commands
 - `pnpm dev` - Start dev server (port 3000)
