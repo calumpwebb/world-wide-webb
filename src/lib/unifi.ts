@@ -177,7 +177,7 @@ class UnifiController {
    * @param minutes - Duration in minutes (default 7 days)
    */
   async authorizeGuest(mac: string, minutes: number = 60 * 24 * 7): Promise<boolean> {
-    const normalizedMac = this.normalizeMac(mac)
+    const normalizedMac = normalizeMac(mac)
 
     const result = await this.request<{ meta: { rc: string } }>(
       `/api/s/${SITE}/cmd/stamgr`,
@@ -197,7 +197,7 @@ class UnifiController {
    * @param mac - MAC address to revoke
    */
   async unauthorizeGuest(mac: string): Promise<boolean> {
-    const normalizedMac = this.normalizeMac(mac)
+    const normalizedMac = normalizeMac(mac)
 
     const result = await this.request<{ meta: { rc: string } }>(
       `/api/s/${SITE}/cmd/stamgr`,
@@ -216,7 +216,7 @@ class UnifiController {
    * @param mac - MAC address to kick
    */
   async kickClient(mac: string): Promise<boolean> {
-    const normalizedMac = this.normalizeMac(mac)
+    const normalizedMac = normalizeMac(mac)
 
     const result = await this.request<{ meta: { rc: string } }>(
       `/api/s/${SITE}/cmd/stamgr`,
@@ -252,7 +252,7 @@ class UnifiController {
    * Get a specific client by MAC
    */
   async getClient(mac: string): Promise<UnifiClient | null> {
-    const normalizedMac = this.normalizeMac(mac)
+    const normalizedMac = normalizeMac(mac)
     const clients = await this.getActiveClients()
     return clients.find((c) => c.mac.toLowerCase() === normalizedMac.toLowerCase()) || null
   }
@@ -261,7 +261,7 @@ class UnifiController {
    * Get DPI (Deep Packet Inspection) stats for a client
    */
   async getDPIStats(mac: string): Promise<UnifiDPIStats | null> {
-    const normalizedMac = this.normalizeMac(mac)
+    const normalizedMac = normalizeMac(mac)
 
     const result = await this.request<{ data: UnifiDPIStats[] }>(
       `/api/s/${SITE}/stat/stadpi`,
@@ -295,14 +295,6 @@ class UnifiController {
     }>(`/api/s/${SITE}/stat/guest`)
 
     return result?.data || []
-  }
-
-  /**
-   * Normalize MAC address to lowercase with colons
-   * @deprecated Use the shared normalizeMac from utils instead
-   */
-  private normalizeMac(mac: string): string {
-    return normalizeMac(mac)
   }
 
   /**
