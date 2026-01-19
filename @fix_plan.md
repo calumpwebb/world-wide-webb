@@ -97,12 +97,13 @@
     - Commands: `pnpm test` (unit), `pnpm test:e2e` (E2E), `pnpm test:coverage`
     - Documentation: `e2e/README.md` with usage guide and test structure
 
-- [x] **Middleware Security** - ✅ **COMPLETED (2026-01-19)** - Server-side session validation implemented
-  - [x] Server-side session validation using database query (not just cookie check)
-  - [x] Role-based access control (verify `role === 'admin'`)
-  - [x] TOTP enforcement check (redirect to setup-2fa if not enabled)
+- [x] **Middleware Security** - ✅ **COMPLETED (2026-01-19)** - Edge-compatible auth with server-side validation
+  - [x] Edge-compatible middleware (cookie-based redirects for UX)
+  - [x] Server-side session validation in pages/API routes (not middleware due to Edge runtime)
+  - [x] Role-based access control (verify `role === 'admin'` in routes)
+  - [x] TOTP enforcement check (pages check TOTP status)
   - [x] Handle expired sessions server-side (check expiresAt in DB)
-  - **Implementation:** src/middleware.ts now validates session token, checks expiry, enforces admin role and TOTP
+  - **Implementation:** src/middleware.ts does optimistic redirects, lib/session.ts has requireAdmin/requireAuth for actual security
 
 - [x] **Secret Validation** - ✅ **COMPLETED (2026-01-19)** - Startup validation for production secrets
   - [x] Startup validation in instrumentation.ts for BETTER_AUTH_SECRET != default
@@ -205,7 +206,17 @@
 ## Notes
 
 ### Recent Enhancements (2026-01-19 PM)
-- **E2E Test Infrastructure** (Latest): Playwright setup for end-to-end testing
+- **Edge Runtime Compatibility Fix** (Latest - 2026-01-19 Evening): Fixed critical middleware crash
+  - Removed database queries from middleware (Edge runtime doesn't support Node.js fs/sqlite)
+  - Middleware now does optimistic cookie-based redirects only (UX optimization)
+  - Server-side validation happens in pages/API routes using lib/session.ts helpers
+  - Added e2e/ to Vitest exclude list to prevent conflicts with Playwright
+  - Fixed error: "The edge runtime does not support Node.js 'fs' module"
+  - All admin pages use authClient.getSession() or requireAdmin() for security
+  - All API routes use requireAdmin()/requireAuth() helpers
+  - Middleware redirects are NOT security boundary (just fast redirects for better UX)
+  - Actual auth enforcement happens server-side per Better Auth Edge runtime recommendations
+- **E2E Test Infrastructure** (Earlier Today): Playwright setup for end-to-end testing
   - Installed and configured Playwright with chromium, firefox, webkit browsers
   - Created comprehensive E2E tests for guest signup flow (email entry, verification, success page)
   - Created E2E tests for admin login flow (login form, TOTP setup, dashboard access)
