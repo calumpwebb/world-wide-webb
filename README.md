@@ -404,6 +404,10 @@ Private project for home network use.
 
 ## Documentation
 
+### Project Overview
+- **[Project Status Report](docs/PROJECT_STATUS.md)** - Comprehensive feature completion and production readiness assessment
+- **[Product Requirements Document](docs/PRD.md)** - Original requirements and specifications
+
 ### API Documentation
 - **[API Reference](docs/API.md)** - Complete API documentation with request/response examples
 - **[OpenAPI Specification](docs/API.yaml)** - Machine-readable API spec (OpenAPI 3.0)
