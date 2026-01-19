@@ -74,8 +74,17 @@
 - [x] **Rate Limiting Helper** (`lib/rate-limit.ts`) - Generic checkRateLimit, resetRateLimit, getRateLimitStatus, formatRateLimitError functions
 - [x] **Admin Settings Page** (`/admin/settings`) - Change password, regenerate TOTP (via disable+re-enable flow), generate new backup codes
 - [x] **Error Handling & Structured Logging** (2026-01-19) - Added try-catch blocks around all database .run() operations, created structured logger for production observability, added error boundaries for all route groups, improved Unifi authorization error feedback
+- [x] **Critical Bug Fixes** (2026-01-19) - Fixed admin guests route filtering, timing-safe code verification, MAC normalization, N+1 query optimization, DPI stats population
 
 ## Notes
+
+### Recent Bug Fixes (2026-01-19)
+- **Admin guests route filtering**: Fixed where condition building - was only applying last filter instead of AND'ing all conditions
+- **Timing attack vulnerability**: Added constant-time string comparison for verification codes using crypto.timingSafeEqual
+- **MAC address normalization**: Created shared normalizeMac utility for consistent handling across codebase
+- **N+1 query problem**: Optimized connection sync to batch load guest records (O(n) → O(1))
+- **DPI stats population**: Fixed empty domains array - now stores top 10 applications by bandwidth
+- **Error handling**: Added missing try-catch blocks in cron job database operations
 
 ### Architecture Decisions
 - **Passwordless for guests**: Email verification sufficient, better UX than passwords
