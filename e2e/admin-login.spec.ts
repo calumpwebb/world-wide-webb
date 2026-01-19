@@ -138,6 +138,9 @@ test.describe('Admin TOTP Setup Flow', () => {
 })
 
 test.describe('Admin Dashboard Access', () => {
+  const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com'
+  const adminPassword = process.env.ADMIN_PASSWORD || 'admin123'
+
   test('should require authentication to access dashboard', async ({ page }) => {
     // Try to access dashboard without auth
     await page.goto('/admin')
