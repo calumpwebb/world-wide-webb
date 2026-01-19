@@ -129,11 +129,18 @@
     - Error responses include actionable recovery steps for users
     - Proper logging of Unifi failures with auth_fail events
 
-- [ ] **Input Sanitization** - XSS risk in user-provided data
-  - [ ] Sanitize user names before storage (prevent stored XSS in admin panel)
-  - [ ] Stricter MAC address regex validation
-  - [ ] Add Content Security Policy headers
-  - [ ] HTML escape user input in email templates
+- [x] **Input Sanitization** - ✅ **COMPLETED (2026-01-19)** - XSS protection implemented
+  - [x] Sanitize user names before storage (prevent stored XSS in admin panel)
+  - [x] Stricter MAC address regex validation
+  - [x] Add Content Security Policy headers
+  - [x] HTML escape user input in email templates
+  - **Implementation:** Created sanitization utilities (escapeHtml, sanitizeName, isValidMac, sanitizeEmail)
+    - All user input sanitized at entry points (verify-email, guest status APIs)
+    - HTML escaping applied to all email templates (verification, admin notifications, expiry reminders)
+    - MAC addresses validated for exact 12 hex character format
+    - CSP headers: default-src 'self', frame-ancestors 'none', form-action 'self'
+    - Security headers: X-Frame-Options DENY, X-Content-Type-Options nosniff, X-XSS-Protection
+    - 11 sanitization tests added, all 39 tests passing
 
 ### 🟢 P2 - Medium Priority (Nice to Have)
 
@@ -186,9 +193,18 @@
 ## Notes
 
 ### Recent Enhancements (2026-01-19 PM)
-- **Test Infrastructure**: Set up Vitest + React Testing Library with 28 passing tests
+- **Input Sanitization & XSS Protection** (Latest): Comprehensive security improvements
+  - Created sanitization utilities: escapeHtml, sanitizeName, isValidMac, sanitizeEmail
+  - All user input sanitized at API entry points (verify-email, status)
+  - HTML escaping in all email templates (verification, admin notifications, expiry reminders)
+  - Strict MAC address validation (exactly 12 hex characters)
+  - Content Security Policy headers: default-src 'self', frame-ancestors 'none'
+  - Security headers: X-Frame-Options DENY, X-Content-Type-Options nosniff, X-XSS-Protection
+  - Added 11 sanitization tests, all 39 tests passing
+- **Test Infrastructure**: Set up Vitest + React Testing Library with 39 passing tests
   - Created comprehensive unit tests for guest auth flow (verify-email, verify-code)
   - Added rate limiting tests (lockout, window expiration, attempt tracking)
+  - Added sanitization tests (XSS, MAC validation, HTML escaping)
   - Tests cover edge cases: expired codes, wrong codes, Unifi failures, rate limits
 - **Middleware Security**: Implemented proper server-side session validation
   - Now validates session token against database (checks expiry, role, TOTP status)
