@@ -1,0 +1,17 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/api/cron?job=connections",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron?job=dpi",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron?job=cleanup",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}
