@@ -43,7 +43,7 @@
 - [x] **Admin Get Guests** (`GET /api/admin/guests`) - Paginated list with filtering, join with Unifi data for online status
 - [x] **Admin Network Status** (`GET /api/admin/network/status`) - Real-time device data joined with guest info, bandwidth, signal
 - [x] **Admin DPI Stats** (`GET /api/admin/dpi?mac=...`) - Fetch domain/app stats from Unifi for specific device
-- [ ] **Rate Limiting Helper** (`lib/rate-limit.ts`) - Generic rate limit check function for reuse across APIs
+- [x] **Rate Limiting Helper** (`lib/rate-limit.ts`) - Generic rate limit check function for reuse across APIs
 - [x] **Middleware Protection** (`middleware.ts`) - Protect /admin routes, force TOTP setup, guest portal auth checks
 - [x] **Backup Codes Validation** - Allow admin login with backup codes if TOTP device lost
 - [ ] **Reverse Proxy Docs** - Caddy/Nginx config for HTTPS, production recommendations, firewall rules
