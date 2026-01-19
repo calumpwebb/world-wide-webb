@@ -31,7 +31,42 @@ interface SyncResult {
 }
 
 /**
- * Sync connection events by comparing current active clients with last known state
+ * Detect and log device connection/disconnection events by comparing network state.
+ *
+ * This background job maintains a stateful list of previously seen MAC addresses and
+ * compares it against current active clients to detect connection state changes.
+ *
+ * **State Management (Module-Level Variables):**
+ * - `lastSeenMacs`: Set of MAC addresses from the previous sync
+ * - `lastSyncTime`: Timestamp of last sync (used for session duration calculation)
+ *
+ * **Algorithm:**
+ * 1. Fetch current active clients from Unifi Controller
+ * 2. Batch-load guest records for all MACs (prevents N+1 queries)
+ * 3. Compare current MACs vs last seen MACs
+ * 4. Log `connect` events for new MACs (with signal strength, AP name, IP)
+ * 5. Log `disconnect` events for missing MACs (with session duration)
+ * 6. Update `lastSeen` timestamp in database for all active guests
+ *
+ * **Performance Optimization:**
+ * Uses `inArray()` to load all guest records in a single query, then builds an
+ * in-memory `Map` for O(1) lookups. This prevents N+1 query problems when checking
+ * hundreds of devices.
+ *
+ * **First Run Behavior:**
+ * On the first sync (`lastSyncTime === 0`), skips disconnect detection to avoid
+ * false positives. Only logs disconnects after establishing baseline state.
+ *
+ * **Runs Every:** 1 minute (configured in instrumentation.ts)
+ *
+ * @returns Promise resolving to sync result with connection/disconnection counts
+ *
+ * @example
+ * ```typescript
+ * // Background job called by instrumentation.ts
+ * const result = await syncConnectionEvents()
+ * console.log(`Found ${result.details.connected} new connections`)
+ * ```
  */
 export async function syncConnectionEvents(): Promise<SyncResult> {
   try {
@@ -126,7 +161,47 @@ export async function syncConnectionEvents(): Promise<SyncResult> {
 }
 
 /**
- * Cache DPI stats from Unifi for all active guests
+ * Fetch and cache Deep Packet Inspection (DPI) statistics from Unifi Controller.
+ *
+ * This background job retrieves bandwidth and application usage data for all active
+ * guest devices and stores it in the `network_stats` table for display in dashboards.
+ *
+ * **What It Does:**
+ * 1. Fetches all currently active clients from Unifi Controller
+ * 2. Filters for clients that have guest records in the database
+ * 3. Fetches DPI stats for each guest MAC (application/category bandwidth)
+ * 4. Aggregates total RX/TX bytes from DPI category data
+ * 5. Stores top N applications (limited by `DPI_TOP_APPS_LIMIT`) as JSON
+ * 6. Falls back to client-level bandwidth if DPI data unavailable
+ *
+ * **DPI Data Structure:**
+ * - `by_cat`: Array of bandwidth by traffic category (social, streaming, gaming, etc.)
+ * - `by_app`: Array of bandwidth by application (app/category IDs)
+ * - **Note:** Application IDs are numeric - mapping to names requires Unifi's app database
+ *
+ * **Top Apps Limiting:**
+ * Only stores top N apps (`DPI_TOP_APPS_LIMIT`, currently 10) to prevent database bloat.
+ * Apps are pre-sorted by bandwidth in the Unifi response, so we slice the first N.
+ *
+ * **Fallback Behavior:**
+ * If DPI stats are unavailable (feature disabled, older firmware, etc.), falls back to
+ * client-level `rx_bytes`/`tx_bytes` counters for basic bandwidth tracking.
+ *
+ * **Domains Field:**
+ * The `domains` field stores top DPI applications as JSON (app/category IDs).
+ * Actual domain names would require parsing Unifi firewall logs, which aren't
+ * easily accessible via the API.
+ *
+ * **Runs Every:** 5 minutes (configured in instrumentation.ts)
+ *
+ * @returns Promise resolving to sync result with count of cached entries
+ *
+ * @example
+ * ```typescript
+ * // Background job called by instrumentation.ts
+ * const result = await cacheDPIStats()
+ * console.log(`Cached DPI stats for ${result.details.cached} devices`)
+ * ```
  */
 export async function cacheDPIStats(): Promise<SyncResult> {
   try {
@@ -205,10 +280,38 @@ export async function cacheDPIStats(): Promise<SyncResult> {
 }
 
 /**
- * Sync DB/Unifi authorization mismatches
+ * Sync database and Unifi Controller authorization mismatches.
  *
- * Ensures that guests authorized in the database are also authorized on Unifi.
- * Runs every 5 minutes to catch any authorization failures or manual revocations.
+ * This critical background job ensures database and Unifi stay in sync by detecting
+ * guests who are authorized in the database but NOT authorized on Unifi, then
+ * re-authorizing them on the controller.
+ *
+ * **What It Does:**
+ * 1. Fetches all currently authorized MACs from Unifi Controller
+ * 2. Queries database for non-expired guest authorizations
+ * 3. Detects mismatches (DB says authorized, Unifi says not)
+ * 4. Re-authorizes missing MACs with correct remaining time
+ * 5. Logs re-authorizations as `admin_extend` events
+ *
+ * **Why This Is Needed:**
+ * - Unifi authorization can fail due to network issues
+ * - Manual revocations in Unifi Controller aren't reflected in DB
+ * - Controller restarts can clear authorization state
+ * - Ensures guests don't lose access due to transient failures
+ *
+ * **Runs Every:** 5 minutes (configured in instrumentation.ts)
+ *
+ * **Time Calculation:** Converts remaining milliseconds to minutes with minimum of 1 minute.
+ * Formula: `Math.floor(remainingMs / 60000)` ensures we never authorize for 0 minutes.
+ *
+ * @returns Promise resolving to sync result with reauthorization count and any errors
+ *
+ * @example
+ * ```typescript
+ * // Background job called by instrumentation.ts
+ * const result = await syncAuthorizationMismatches()
+ * console.log(`Re-authorized ${result.details.reauthorized} MACs`)
+ * ```
  */
 export async function syncAuthorizationMismatches(): Promise<SyncResult> {
   try {

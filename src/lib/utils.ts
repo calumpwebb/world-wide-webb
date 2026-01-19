@@ -44,11 +44,45 @@ export function escapeHtml(unsafe: string): string {
 }
 
 /**
- * Sanitize user name input
- * - Removes HTML tags and their content
- * - Trims whitespace
- * - Limits to alphanumeric, spaces, hyphens, apostrophes, and periods
- * - Max 100 characters
+ * Sanitize user-provided name input to prevent XSS and injection attacks.
+ *
+ * **⚠️ SECURITY CRITICAL:** This function prevents stored XSS attacks by removing
+ * malicious HTML/scripts from user names before database storage. Names are displayed
+ * in the admin panel, email templates, and guest portal - unsanitized input could
+ * execute JavaScript in admin sessions.
+ *
+ * **Multi-Stage Sanitization:**
+ * 1. **Trim whitespace** - Remove leading/trailing spaces
+ * 2. **Remove `<script>` tags** - Strip script tags and their entire content first
+ * 3. **Remove all HTML tags** - Strip remaining tags like `<img>`, `<iframe>`, etc.
+ * 4. **Character allowlist** - Only permit: `a-z`, `A-Z`, `0-9`, space, `-`, `'`, `.`
+ * 5. **Length limit** - Truncate to 100 characters max
+ *
+ * **Why Two-Stage Tag Removal:**
+ * Removing `<script>` tags first prevents cases like `<script>alert('XSS')</script>`
+ * where the content needs to be removed along with the tags. The second pass catches
+ * all other HTML tags that might be used for injection (img onerror, iframe, etc.).
+ *
+ * **Character Allowlist Rationale:**
+ * - Supports names like "John O'Brien", "Mary-Jane", "Dr. Smith"
+ * - Blocks special chars that could be used in injection attacks
+ * - Regex: `/[^a-zA-Z0-9\s\-'.]/g` (inverted match = remove non-allowed chars)
+ *
+ * **Use Cases:**
+ * - Guest signup name field (before database insert)
+ * - Admin panel display (prevents stored XSS)
+ * - Email templates (names embedded in HTML emails)
+ *
+ * @param name - Raw user input for name field
+ * @returns Sanitized name safe for storage and display
+ *
+ * @example
+ * ```typescript
+ * sanitizeName('<script>alert("XSS")</script>John')  // Returns: 'John'
+ * sanitizeName("Mary-Jane O'Brien")                  // Returns: "Mary-Jane O'Brien"
+ * sanitizeName('<img src=x onerror=alert(1)>Test')  // Returns: 'Test'
+ * sanitizeName('A'.repeat(200))                      // Returns: 'A'.repeat(100)
+ * ```
  */
 export function sanitizeName(name: string): string {
   return (

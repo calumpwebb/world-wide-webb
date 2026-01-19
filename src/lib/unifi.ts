@@ -77,7 +77,34 @@ class UnifiController {
   private isLoggedIn = false
 
   /**
-   * Login to the Unifi Controller
+   * Authenticate with the Unifi Controller and establish a session.
+   *
+   * This method is idempotent - if already logged in, it returns immediately.
+   * On successful login, it extracts session cookies and CSRF token for subsequent requests.
+   *
+   * **Session Management:**
+   * - Cookies are stored in `this.cookies` for session persistence
+   * - CSRF token is extracted from `csrf_token` cookie using regex
+   * - `isLoggedIn` flag prevents unnecessary login attempts
+   *
+   * **CSRF Token Extraction:**
+   * Parses the `Set-Cookie` header to find `csrf_token=<value>` and extracts the value.
+   * The regex `/csrf_token=([^;]+)/` matches everything between `=` and `;`.
+   *
+   * **SSL Configuration:**
+   * Uses custom HTTPS agent with `rejectUnauthorized: false` for self-signed certificates.
+   * This is common for home Unifi Controllers that use self-signed certs.
+   *
+   * @returns Promise resolving to true on success, false on failure
+   *
+   * @example
+   * ```typescript
+   * const unifi = new UnifiController()
+   * const success = await unifi.login()
+   * if (!success) {
+   *   console.error('Failed to authenticate with Unifi Controller')
+   * }
+   * ```
    */
   async login(): Promise<boolean> {
     if (this.isLoggedIn) return true
@@ -123,7 +150,43 @@ class UnifiController {
   }
 
   /**
-   * Make an authenticated request to the controller
+   * Make an authenticated HTTP request to the Unifi Controller.
+   *
+   * This private method handles all API communication with automatic session management
+   * and retry logic. It ensures the client is logged in before making requests and
+   * automatically re-authenticates if the session expires (401 response).
+   *
+   * **Auto-Login:** If not logged in, calls `login()` before making the request.
+   *
+   * **Auto-Retry on 401:** If the server returns 401 (Unauthorized), the method:
+   * 1. Marks session as expired (`isLoggedIn = false`)
+   * 2. Clears cookies
+   * 3. Recursively calls itself (which triggers re-login via auto-login)
+   * 4. **Important:** Only retries ONCE - the recursive call won't retry again if it fails
+   *
+   * **CSRF Protection:** Includes `X-Csrf-Token` header if CSRF token was extracted during login.
+   *
+   * **Generic Return Type:** Uses TypeScript generics to type the response data.
+   * Callers specify the expected response shape: `request<AuthResponse>('/api/login')`
+   *
+   * @template T - The expected response data type
+   * @param endpoint - API endpoint path (e.g., '/api/s/default/cmd/stamgr')
+   * @param method - HTTP method (GET or POST), defaults to GET
+   * @param body - Optional request body for POST requests
+   * @returns Promise resolving to parsed response data, or null on failure
+   *
+   * @example
+   * ```typescript
+   * // GET request with typed response
+   * interface Client { mac: string; ip: string }
+   * const clients = await this.request<{ data: Client[] }>('/api/s/default/stat/sta')
+   *
+   * // POST request with body
+   * const result = await this.request('/api/s/default/cmd/stamgr', 'POST', {
+   *   cmd: 'authorize-guest',
+   *   mac: 'aa:bb:cc:dd:ee:ff',
+   * })
+   * ```
    */
   private async request<T>(
     endpoint: string,

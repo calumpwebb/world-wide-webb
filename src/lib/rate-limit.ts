@@ -55,12 +55,43 @@ const DEFAULT_CONFIGS: Record<RateLimitAction, RateLimitConfig> = {
 }
 
 /**
- * Check and update rate limit for an identifier and action
+ * Check and update rate limit for an identifier and action.
  *
- * @param identifier - Email address or IP address
- * @param action - The rate-limited action type
- * @param config - Optional custom rate limit configuration
- * @returns Result indicating if the action is allowed
+ * This function implements a sliding window rate limiter with optional lockout support.
+ * It tracks attempts over time and can temporarily lock out users who exceed limits.
+ *
+ * **State Machine Logic:**
+ * 1. If locked out → Deny immediately and return lockedUntil timestamp
+ * 2. If no record OR window expired → Allow and reset to 1 attempt
+ * 3. If at maxAttempts → Deny and apply lockout (if configured)
+ * 4. If under maxAttempts → Allow and increment attempt counter
+ *
+ * **Rate Limit Types:**
+ * - `verify`: Email verification (5/hour, no lockout)
+ * - `resend`: Code resend (3/hour, no lockout)
+ * - `login`: User login (5/15min, 15min lockout)
+ * - `admin_login`: Admin login (5/15min, 30min lockout)
+ *
+ * **Important:** This function has side effects - it updates the database on every call.
+ * Use `getRateLimitStatus()` for read-only checks.
+ *
+ * @param identifier - Unique identifier for rate limiting (email address or IP)
+ * @param action - The rate-limited action type (verify, resend, login, admin_login)
+ * @param config - Optional custom rate limit configuration to override defaults
+ * @returns Promise resolving to result with allowed status, remaining attempts, reset time, and optional lockout time
+ *
+ * @example
+ * ```typescript
+ * // Check if user can attempt login
+ * const result = await checkRateLimit('user@example.com', 'login')
+ * if (!result.allowed) {
+ *   if (result.lockedUntil) {
+ *     return res.status(429).json({ error: 'Account locked due to too many attempts' })
+ *   }
+ *   return res.status(429).json({ error: 'Rate limit exceeded' })
+ * }
+ * // Proceed with login attempt...
+ * ```
  */
 export async function checkRateLimit(
   identifier: string,
@@ -149,7 +180,25 @@ export async function checkRateLimit(
 }
 
 /**
- * Reset rate limit for an identifier and action (e.g., after successful login)
+ * Reset rate limit for an identifier and action by deleting the record.
+ *
+ * Call this after a successful action to clear the attempt counter and any lockout state.
+ * The next call to `checkRateLimit()` will start fresh with 0 attempts.
+ *
+ * **Common Use Cases:**
+ * - After successful login (clear failed login attempts)
+ * - After successful email verification (clear verification attempts)
+ * - Manual admin override to unlock an account
+ *
+ * @param identifier - Unique identifier for rate limiting (email address or IP)
+ * @param action - The rate-limited action type to reset
+ * @returns Promise that resolves when the rate limit record is deleted
+ *
+ * @example
+ * ```typescript
+ * // Clear rate limit after successful login
+ * await resetRateLimit('user@example.com', 'login')
+ * ```
  */
 export async function resetRateLimit(identifier: string, action: RateLimitAction): Promise<void> {
   await db
@@ -158,7 +207,28 @@ export async function resetRateLimit(identifier: string, action: RateLimitAction
 }
 
 /**
- * Get current rate limit status without incrementing
+ * Get current rate limit status without incrementing attempt counter.
+ *
+ * This is a read-only version of `checkRateLimit()` that does NOT update the database.
+ * Use this when you need to check rate limit status without consuming an attempt.
+ *
+ * **Use Cases:**
+ * - Displaying remaining attempts to the user
+ * - Pre-flight checks before expensive operations
+ * - Monitoring/admin dashboards showing rate limit states
+ *
+ * @param identifier - Unique identifier for rate limiting (email address or IP)
+ * @param action - The rate-limited action type (verify, resend, login, admin_login)
+ * @returns Promise resolving to current status, or null if no rate limit record exists
+ *
+ * @example
+ * ```typescript
+ * // Check status before showing a form
+ * const status = await getRateLimitStatus('user@example.com', 'login')
+ * if (status?.lockedUntil) {
+ *   return <div>Your account is locked until {status.lockedUntil.toLocaleString()}</div>
+ * }
+ * ```
  */
 export async function getRateLimitStatus(
   identifier: string,
@@ -207,7 +277,22 @@ export async function getRateLimitStatus(
 }
 
 /**
- * Format rate limit error message for API response
+ * Format a user-friendly rate limit error message for API responses.
+ *
+ * Generates a human-readable message indicating how long until the rate limit resets.
+ * Distinguishes between lockouts (more severe) and regular rate limits.
+ *
+ * @param result - The rate limit result from `checkRateLimit()`
+ * @returns User-friendly error message with time remaining
+ *
+ * @example
+ * ```typescript
+ * const result = await checkRateLimit('user@example.com', 'login')
+ * if (!result.allowed) {
+ *   return res.status(429).json({ error: formatRateLimitError(result) })
+ * }
+ * // Output: "Too many attempts. Please try again in 15 minutes."
+ * ```
  */
 export function formatRateLimitError(result: RateLimitResult): string {
   if (result.lockedUntil) {
