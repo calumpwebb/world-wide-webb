@@ -36,3 +36,6 @@ Thumbs.db
 !.ralph/TASKS.md
 !.ralph/cycles/
 !.ralph/scripts/
+
+# Third-party tools and plugins
+third_party/
