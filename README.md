@@ -53,6 +53,29 @@ The setup command will:
 
 ### Environment Variables
 
+**Option 1: Generate Secrets Automatically (Recommended)**
+
+Use the secrets generator script for a guided setup with secure random secrets:
+
+```bash
+# Interactive mode - prompts for configuration
+pnpm generate-secrets
+
+# Automatic mode - generates all secrets without prompting
+pnpm generate-secrets:auto
+
+# Generate secrets for production
+pnpm generate-secrets --output .env.production
+```
+
+The script will:
+- Generate a cryptographically secure `BETTER_AUTH_SECRET` (32+ characters)
+- Generate a strong random admin password (or prompt for your own)
+- Guide you through Unifi and email configuration
+- Create a ready-to-use `.env` file with proper formatting
+
+**Option 2: Manual Configuration**
+
 Copy `.env.example` to `.env.local` and configure:
 
 ```bash
@@ -80,6 +103,11 @@ SMTP_PORT=1025
 EMAIL_PROVIDER=resend
 RESEND_API_KEY=your-resend-api-key
 ```
+
+**Important Security Notes:**
+- `BETTER_AUTH_SECRET` must be at least 32 characters for production
+- Admin password should be 12+ characters with mixed case, numbers, and symbols
+- Never commit `.env` or `.env.local` to version control
 
 ## Tilt Development (Recommended)
 

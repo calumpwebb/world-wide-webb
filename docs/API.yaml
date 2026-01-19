@@ -176,7 +176,7 @@ paths:
                 code:
                   type: string
                   pattern: '^[0-9]{6}$'
-                  example: "123456"
+                  example: '123456'
                   description: 6-digit verification code
       responses:
         '200':
@@ -195,7 +195,7 @@ paths:
                   expiresAt:
                     type: string
                     format: date-time
-                    example: "2026-01-26T10:30:00.000Z"
+                    example: '2026-01-26T10:30:00.000Z'
                     description: Authorization expiry timestamp
                   guestId:
                     type: number
@@ -336,12 +336,12 @@ paths:
                   expiresAt:
                     type: string
                     format: date-time
-                    example: "2026-01-26T10:30:00.000Z"
+                    example: '2026-01-26T10:30:00.000Z'
                     nullable: true
                   authorizedAt:
                     type: string
                     format: date-time
-                    example: "2026-01-19T10:30:00.000Z"
+                    example: '2026-01-19T10:30:00.000Z'
                     nullable: true
                   user:
                     type: object
@@ -591,7 +591,7 @@ paths:
                     items:
                       type: string
                     example:
-                      - "Failed to extend guest 3: Unifi authorization failed"
+                      - 'Failed to extend guest 3: Unifi authorization failed'
         '400':
           description: Invalid request
         '401':
@@ -653,7 +653,7 @@ paths:
                     items:
                       type: string
                     example:
-                      - "Failed to revoke guest 3: Unifi operation failed"
+                      - 'Failed to revoke guest 3: Unifi operation failed'
         '400':
           description: Invalid request
         '401':
@@ -830,7 +830,7 @@ paths:
                     description: Expiring in next 24 hours
                   totalBandwidth:
                     type: string
-                    example: "2.5 GB"
+                    example: '2.5 GB'
                     description: Last 24 hours total bandwidth
         '401':
           description: Not authenticated
@@ -877,7 +877,19 @@ paths:
           in: query
           schema:
             type: string
-            enum: [connect, disconnect, auth_success, auth_fail, admin_revoke, admin_extend, code_sent, code_resent, admin_login, admin_logout]
+            enum:
+              [
+                connect,
+                disconnect,
+                auth_success,
+                auth_fail,
+                admin_revoke,
+                admin_extend,
+                code_sent,
+                code_resent,
+                admin_login,
+                admin_logout,
+              ]
           description: Filter by event type
         - name: search
           in: query
@@ -996,7 +1008,7 @@ paths:
                 healthy:
                   value:
                     status: healthy
-                    timestamp: "2026-01-19T10:30:00.000Z"
+                    timestamp: '2026-01-19T10:30:00.000Z'
                     checks:
                       database:
                         status: pass
@@ -1007,11 +1019,11 @@ paths:
                       email:
                         status: pass
                         latencyMs: 120
-                    version: "1.0.0"
+                    version: '1.0.0'
                 degraded:
                   value:
                     status: degraded
-                    timestamp: "2026-01-19T10:30:00.000Z"
+                    timestamp: '2026-01-19T10:30:00.000Z'
                     checks:
                       database:
                         status: pass
@@ -1022,7 +1034,7 @@ paths:
                       email:
                         status: pass
                         latencyMs: 110
-                    version: "1.0.0"
+                    version: '1.0.0'
         '503':
           description: System is unhealthy
           content:
@@ -1031,7 +1043,7 @@ paths:
                 $ref: '#/components/schemas/HealthCheck'
               example:
                 status: unhealthy
-                timestamp: "2026-01-19T10:30:00.000Z"
+                timestamp: '2026-01-19T10:30:00.000Z'
                 checks:
                   database:
                     status: fail
@@ -1042,7 +1054,7 @@ paths:
                   email:
                     status: pass
                     latencyMs: 95
-                version: "1.0.0"
+                version: '1.0.0'
 
   /api/metrics:
     get:
@@ -1185,16 +1197,16 @@ components:
         authorizedAt:
           type: string
           format: date-time
-          example: "2026-01-19T10:30:00.000Z"
+          example: '2026-01-19T10:30:00.000Z'
         expiresAt:
           type: string
           format: date-time
-          example: "2026-01-26T10:30:00.000Z"
+          example: '2026-01-26T10:30:00.000Z'
         lastSeen:
           type: string
           format: date-time
           nullable: true
-          example: "2026-01-19T12:45:00.000Z"
+          example: '2026-01-19T12:45:00.000Z'
         authCount:
           type: integer
           example: 3
@@ -1288,7 +1300,7 @@ components:
         lastSeen:
           type: string
           format: date-time
-          example: "2026-01-19T12:45:00.000Z"
+          example: '2026-01-19T12:45:00.000Z'
         authorized:
           type: boolean
           example: true
@@ -1366,7 +1378,7 @@ components:
           nullable: true
           example: ng
           enum: [ng, na, ad]
-          description: "ng: 2.4GHz, na: 5GHz, ad: 6GHz"
+          description: 'ng: 2.4GHz, na: 5GHz, ad: 6GHz'
         essid:
           type: string
           nullable: true
@@ -1418,16 +1430,16 @@ components:
                 example: 123456789
               rxFormatted:
                 type: string
-                example: "1.15 GB"
+                example: '1.15 GB'
               txFormatted:
                 type: string
-                example: "117.74 MB"
+                example: '117.74 MB'
               totalBytes:
                 type: number
                 example: 1358024679
               totalFormatted:
                 type: string
-                example: "1.26 GB"
+                example: '1.26 GB'
         applications:
           type: array
           description: Top 20 applications by bandwidth
@@ -1457,10 +1469,10 @@ components:
                 type: string
         totalRx:
           type: string
-          example: "5.2 GB"
+          example: '5.2 GB'
         totalTx:
           type: string
-          example: "1.8 GB"
+          example: '1.8 GB'
         totalRxBytes:
           type: number
           example: 5581619200
@@ -1480,7 +1492,19 @@ components:
           example: 123
         type:
           type: string
-          enum: [connect, disconnect, auth_success, auth_fail, admin_revoke, admin_extend, code_sent, code_resent, admin_login, admin_logout]
+          enum:
+            [
+              connect,
+              disconnect,
+              auth_success,
+              auth_fail,
+              admin_revoke,
+              admin_extend,
+              code_sent,
+              code_resent,
+              admin_login,
+              admin_logout,
+            ]
           example: auth_success
         description:
           type: string
@@ -1488,7 +1512,7 @@ components:
         timestamp:
           type: string
           format: date-time
-          example: "2026-01-19T10:30:00.000Z"
+          example: '2026-01-19T10:30:00.000Z'
         user:
           type: string
           nullable: true
@@ -1534,7 +1558,7 @@ components:
         timestamp:
           type: string
           format: date-time
-          example: "2026-01-19T10:30:00.000Z"
+          example: '2026-01-19T10:30:00.000Z'
         link:
           type: string
           nullable: true
@@ -1550,7 +1574,7 @@ components:
         timestamp:
           type: string
           format: date-time
-          example: "2026-01-19T10:30:00.000Z"
+          example: '2026-01-19T10:30:00.000Z'
         checks:
           type: object
           properties:
@@ -1595,7 +1619,7 @@ components:
                   nullable: true
         version:
           type: string
-          example: "1.0.0"
+          example: '1.0.0'
 
     Metrics:
       type: object
@@ -1603,7 +1627,7 @@ components:
         timestamp:
           type: string
           format: date-time
-          example: "2026-01-19T10:30:00.000Z"
+          example: '2026-01-19T10:30:00.000Z'
         guests:
           type: object
           properties:

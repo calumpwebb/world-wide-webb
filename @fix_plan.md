@@ -108,9 +108,10 @@
 - [x] **Secret Validation** - ✅ **COMPLETED (2026-01-19)** - Startup validation for production secrets
   - [x] Startup validation in instrumentation.ts for BETTER_AUTH_SECRET != default
   - [x] Admin password complexity validation (12+ chars in production)
+  - [x] Generate secrets script for initial setup - ✅ **COMPLETED (2026-01-19 PM)**
   - [ ] Force password change on first admin login
-  - [ ] Generate secrets script for initial setup
   - **Implementation:** src/instrumentation.ts now validates secrets on startup, fails in production if critical errors found
+  - **Secrets Script:** scripts/generate-secrets.ts - Interactive and auto modes for secure secret generation with password complexity validation
 
 ### 🟡 P1 - High Priority (Should Fix Soon)
 
@@ -218,7 +219,22 @@
 ## Notes
 
 ### Recent Enhancements (2026-01-19 PM)
-- **Magic Numbers Refactoring** (Latest - 2026-01-19): Replaced 45+ magic numbers with named constants
+- **Secrets Generation Script** (Latest - 2026-01-19 PM): Automated secure secrets generation for project setup
+  - Created scripts/generate-secrets.ts with interactive and automatic modes
+  - Interactive mode (`pnpm generate-secrets`): Guided setup with prompts for all configuration
+  - Automatic mode (`pnpm generate-secrets:auto`): Generates all secrets without prompting
+  - Features:
+    - Cryptographically secure BETTER_AUTH_SECRET generation (32+ characters, base64url)
+    - Strong random admin password generation (16 chars, mixed case, numbers, symbols)
+    - Password complexity validation (12+ chars, 3/4 character types required)
+    - Guided Unifi and email configuration with sensible defaults
+    - Overwrite protection with confirmation prompt
+    - Clear next steps and security warnings after generation
+  - Updated README.md and DEPLOYMENT.md with secrets generator instructions
+  - Added `pnpm generate-secrets` and `pnpm generate-secrets:auto` commands to package.json
+  - Helps users avoid weak secrets and simplifies initial setup
+  - Benefits: Secure by default, reduces setup friction, validates production readiness
+- **Magic Numbers Refactoring** (2026-01-19): Replaced 45+ magic numbers with named constants
   - Created centralized constants directory (src/lib/constants/) with 6 organized files:
     - `time.ts`: Time duration constants (ONE_DAY_MS, ONE_HOUR_MS, FIFTEEN_MINUTES_MS, etc.)
     - `auth.ts`: Authentication constants (BCRYPT_SALT_ROUNDS, TOTP_PERIOD_SECONDS, BACKUP_CODES_AMOUNT, etc.)

@@ -25,6 +25,8 @@
     "db:backup:offsite": "tsx scripts/backup-database.ts --verify --offsite-dir",
     "db:restore": "tsx scripts/restore-database.ts",
     "db:restore:list": "tsx scripts/restore-database.ts --list",
+    "generate-secrets": "tsx scripts/generate-secrets.ts",
+    "generate-secrets:auto": "tsx scripts/generate-secrets.ts --auto",
     "setup": "pnpm db:generate && pnpm db:migrate && pnpm db:seed",
     "prepare": "husky"
   },

@@ -169,11 +169,29 @@ sudo chown -R $USER:$USER /opt/world-wide-webb
 
 #### 2. Configure Environment Variables
 
+**Option 1: Use Secrets Generator (Recommended)**
+
+```bash
+# Interactive mode - guides you through setup
+pnpm generate-secrets --output .env
+
+# Automatic mode - generates all secrets without prompting
+pnpm generate-secrets:auto --output .env
+```
+
+The secrets generator will:
+- Generate cryptographically secure secrets (BETTER_AUTH_SECRET, admin password)
+- Validate password complexity (12+ characters, mixed case, numbers, symbols)
+- Guide you through Unifi and email configuration
+- Create a production-ready `.env` file
+
+**Option 2: Manual Setup**
+
 ```bash
 # Copy environment template
 cp .env.example .env
 
-# Generate secrets
+# Generate secrets manually
 openssl rand -base64 32  # Use for BETTER_AUTH_SECRET
 openssl rand -base64 32  # Use for CRON_SECRET
 
@@ -873,8 +891,8 @@ For advanced monitoring, expose Prometheus metrics:
 Before going live, verify all security measures:
 
 ### Application Security
-- [ ] **Secrets rotated:** BETTER_AUTH_SECRET and CRON_SECRET generated with `openssl rand -base64 32`
-- [ ] **Admin password:** Strong password (12+ characters) set in production
+- [ ] **Secrets generated:** Use `pnpm generate-secrets` or `openssl rand -base64 32` for BETTER_AUTH_SECRET
+- [ ] **Admin password:** Strong password (12+ characters, mixed case, numbers, symbols) - secrets generator validates this automatically
 - [ ] **ALLOW_OFFLINE_AUTH:** Set to `false` (fail-fast on Unifi errors)
 - [ ] **Unifi credentials:** Dedicated limited admin account created
 - [ ] **TOTP enabled:** Admin forced to set up 2FA on first login
