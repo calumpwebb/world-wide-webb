@@ -3,6 +3,7 @@ import { db, guests, users } from '@/lib/db'
 import { unifi } from '@/lib/unifi'
 import { eq, gt } from 'drizzle-orm'
 import { requireAdmin, AdminAuthError } from '@/lib/session'
+import { calculateSignalStrength } from '@/lib/utils'
 
 export async function GET() {
   try {
@@ -51,7 +52,7 @@ export async function GET() {
             client.hostname ||
             'Unknown Device',
           ip: client.ip || 'N/A',
-          signalStrength: client.rssi ? Math.min(100, Math.max(0, client.rssi + 100)) : undefined,
+          signalStrength: client.rssi ? calculateSignalStrength(client.rssi) : undefined,
           lastSeen: client.last_seen
             ? new Date(client.last_seen * 1000).toISOString()
             : new Date().toISOString(),

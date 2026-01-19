@@ -29,6 +29,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { authClient } from '@/lib/auth-client'
+import { MIN_PASSWORD_LENGTH } from '@/lib/constants/validation'
+import { SUCCESS_MESSAGE_DURATION_MS } from '@/lib/constants/ui'
 
 export default function AdminSettingsPage() {
   const router = useRouter()
@@ -100,8 +102,8 @@ export default function AdminSettingsPage() {
     setPasswordError('')
     setPasswordSuccess(false)
 
-    if (newPassword.length < 8) {
-      setPasswordError('New password must be at least 8 characters')
+    if (newPassword.length < MIN_PASSWORD_LENGTH) {
+      setPasswordError(`New password must be at least ${MIN_PASSWORD_LENGTH} characters`)
       return
     }
 
@@ -130,8 +132,8 @@ export default function AdminSettingsPage() {
       setConfirmPassword('')
       setIsChangingPassword(false)
 
-      // Clear success message after 3 seconds
-      setTimeout(() => setPasswordSuccess(false), 3000)
+      // Clear success message after configured delay
+      setTimeout(() => setPasswordSuccess(false), SUCCESS_MESSAGE_DURATION_MS)
     } catch {
       setPasswordError('Failed to change password. Please try again.')
       setIsChangingPassword(false)

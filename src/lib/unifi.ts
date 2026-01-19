@@ -12,10 +12,10 @@
 
 import https from 'https'
 import { normalizeMac } from './utils'
-import { UNIFI_DEFAULT_PORT, GUEST_AUTH_DURATION_MINUTES } from './constants'
+import { UNIFI_DEFAULT_PORT, UNIFI_DEFAULT_IP, GUEST_AUTH_DURATION_MINUTES } from './constants'
 
 const CONTROLLER_URL =
-  process.env.UNIFI_CONTROLLER_URL || `https://192.168.1.1:${UNIFI_DEFAULT_PORT}`
+  process.env.UNIFI_CONTROLLER_URL || `https://${UNIFI_DEFAULT_IP}:${UNIFI_DEFAULT_PORT}`
 const USERNAME = process.env.UNIFI_USERNAME || 'admin'
 const PASSWORD = process.env.UNIFI_PASSWORD || ''
 const SITE = process.env.UNIFI_SITE || 'default'

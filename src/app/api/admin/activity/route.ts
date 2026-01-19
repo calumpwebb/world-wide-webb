@@ -4,6 +4,7 @@ import { requireAdmin, AdminAuthError } from '@/lib/session'
 
 export const dynamic = 'force-dynamic'
 import { eq, desc, sql, like, or, and, gte, lte } from 'drizzle-orm'
+import { PAGINATION_DEFAULT_LIMIT } from '@/lib/constants'
 
 type EventType =
   | 'connect'
@@ -54,7 +55,7 @@ export async function GET(request: NextRequest) {
     await requireAdmin()
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '20')
+    const limit = parseInt(searchParams.get('limit') || String(PAGINATION_DEFAULT_LIMIT))
     const eventType = searchParams.get('type') || ''
     const search = searchParams.get('search') || ''
     const startDate = searchParams.get('startDate') || ''

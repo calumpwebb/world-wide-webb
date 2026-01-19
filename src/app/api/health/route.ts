@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server'
 import { db, users } from '@/lib/db'
 import { sql } from 'drizzle-orm'
-import { UNIFI_HEALTH_CHECK_TIMEOUT_MS, MAILPIT_HEALTH_CHECK_TIMEOUT_MS } from '@/lib/constants'
+import {
+  UNIFI_HEALTH_CHECK_TIMEOUT_MS,
+  MAILPIT_HEALTH_CHECK_TIMEOUT_MS,
+  SMTP_DEFAULT_PORT,
+  MAILPIT_API_PORT,
+} from '@/lib/constants'
 
 interface HealthCheck {
   status: 'healthy' | 'degraded' | 'unhealthy'
@@ -111,12 +116,12 @@ async function checkEmail(): Promise<CheckResult> {
 
   // For Mailpit, check SMTP connectivity
   const smtpHost = process.env.SMTP_HOST || 'localhost'
-  const smtpPort = parseInt(process.env.SMTP_PORT || '1025')
+  const smtpPort = parseInt(process.env.SMTP_PORT || String(SMTP_DEFAULT_PORT))
 
   const start = Date.now()
   try {
     // Quick TCP check to SMTP port
-    const response = await fetch(`http://${smtpHost}:8025/api/v1/info`, {
+    const response = await fetch(`http://${smtpHost}:${MAILPIT_API_PORT}/api/v1/info`, {
       method: 'GET',
       signal: AbortSignal.timeout(MAILPIT_HEALTH_CHECK_TIMEOUT_MS),
     }).catch(() => null)

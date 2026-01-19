@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { CheckCircle2, Wifi } from 'lucide-react'
+import { UI_AUTO_CLOSE_DELAY_MS } from '@/lib/constants/ui'
 
-const AUTO_CLOSE_DELAY = 3000
+const AUTO_CLOSE_DELAY = UI_AUTO_CLOSE_DELAY_MS
 
 interface AuthData {
   success: boolean

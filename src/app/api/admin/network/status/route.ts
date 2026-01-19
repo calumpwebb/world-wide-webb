@@ -3,6 +3,7 @@ import { db, guests, users } from '@/lib/db'
 import { unifi } from '@/lib/unifi'
 import { eq, gt } from 'drizzle-orm'
 import { requireAdmin, AdminAuthError } from '@/lib/session'
+import { calculateSignalStrength } from '@/lib/utils'
 
 interface NetworkClient {
   mac: string
@@ -93,7 +94,7 @@ export async function GET() {
 
         // Calculate signal percentage from RSSI (-100 to 0 dBm range)
         const signalStrength =
-          client.rssi !== undefined ? Math.min(100, Math.max(0, client.rssi + 100)) : undefined
+          client.rssi !== undefined ? calculateSignalStrength(client.rssi) : undefined
 
         return {
           mac: client.mac || 'Unknown',

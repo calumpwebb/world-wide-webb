@@ -184,11 +184,11 @@
 
 ### 🔵 P3 - Low Priority (Future Enhancements)
 
-- [x] **Code Cleanup** - ✅ **COMPLETED (2026-01-19)** - Deprecated code removed, magic numbers refactored, JSDoc documentation added
+- [x] **Code Cleanup** - ✅ **COMPLETED (2026-01-19)** - Deprecated code removed, magic numbers refactored, JSDoc documentation added, hardcoded values extracted
   - [x] Remove deprecated normalizeMac wrapper in src/lib/unifi.ts (replaced all calls with direct imports)
   - [x] Replace magic numbers with named constants (e.g., 600000 → CODE_EXPIRY_MS)
   - [x] Add JSDoc comments to complex functions (9+ critical functions documented)
-  - [ ] Extract hardcoded values to configuration
+  - [x] Extract hardcoded values to configuration - ✅ **COMPLETED (2026-01-19 PM)**
 
 - [ ] **Performance Optimization**
   - [ ] Add caching layer for Unifi API calls (Redis or in-memory)
@@ -219,7 +219,24 @@
 ## Notes
 
 ### Recent Enhancements (2026-01-19 PM)
-- **JSDoc Documentation** (Latest - 2026-01-19 PM): Comprehensive documentation for critical functions
+- **Hardcoded Configuration Extraction** (Latest - 2026-01-19 PM): Final cleanup of hardcoded values
+  - Created centralized constant files:
+    - `src/lib/constants/validation.ts` - Input validation limits (MAX_NAME_LENGTH, MAX_DEVICE_NICKNAME_LENGTH, MIN_PASSWORD_LENGTH)
+    - `src/lib/constants/email.ts` - Email configuration (EMAIL_FROM_DEFAULT, EMAIL_SUBJECT_* constants)
+    - `src/lib/constants/ui.ts` - UI timing (UI_AUTO_CLOSE_DELAY_MS, SUCCESS_MESSAGE_DURATION_MS)
+  - Added network configuration constants to `src/lib/constants/config.ts`:
+    - UNIFI_DEFAULT_IP (192.168.1.1), MAILPIT_API_PORT (8025), PAGINATION_DEFAULT_LIMIT (20)
+  - Fixed DPI route to use DPI_TOP_APPS_LIMIT constant instead of hardcoded 20
+  - Created `calculateSignalStrength(rssi)` helper function in utils.ts to eliminate duplicate RSSI logic
+  - Updated 15+ files to use centralized constants instead of hardcoded values:
+    - Guest landing page, verification API, device management API (validation constants)
+    - Health check, Unifi client, admin routes (network configuration constants)
+    - Email service (email configuration constants)
+    - Success page, admin settings (UI timing constants)
+    - Admin devices and network status APIs (signal strength helper)
+  - Benefits: Single source of truth, easier configuration changes, improved maintainability
+  - All 39 unit tests passing, no regressions introduced
+- **JSDoc Documentation** (2026-01-19 PM): Comprehensive documentation for critical functions
   - Added detailed JSDoc comments to 9+ complex functions across 4 core library files
   - Documented functions:
     - `checkRateLimit()`, `getRateLimitStatus()`, `resetRateLimit()`, `formatRateLimitError()` (rate-limit.ts)

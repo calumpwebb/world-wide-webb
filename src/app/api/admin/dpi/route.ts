@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { unifi } from '@/lib/unifi'
 import { z } from 'zod'
 import { requireAdmin, AdminAuthError } from '@/lib/session'
+import { DPI_TOP_APPS_LIMIT } from '@/lib/constants'
 
 export const dynamic = 'force-dynamic'
 
@@ -75,7 +76,7 @@ export async function GET(request: NextRequest) {
       }))
       .sort((a, b) => b.totalBytes - a.totalBytes)
 
-    // Process applications (top 20)
+    // Process applications (top N by bandwidth)
     const applications = (dpiStats.by_app || [])
       .map((app) => ({
         id: app.app,
@@ -89,7 +90,7 @@ export async function GET(request: NextRequest) {
         totalFormatted: formatBytes(app.rx_bytes + app.tx_bytes),
       }))
       .sort((a, b) => b.totalBytes - a.totalBytes)
-      .slice(0, 20)
+      .slice(0, DPI_TOP_APPS_LIMIT)
 
     // Calculate totals
     const totalRx = categories.reduce((sum, c) => sum + c.rxBytes, 0)

@@ -5,13 +5,14 @@ import { requireAdmin, AdminAuthError } from '@/lib/session'
 export const dynamic = 'force-dynamic'
 import { unifi } from '@/lib/unifi'
 import { eq, desc, like, or, and, sql, gt, lt } from 'drizzle-orm'
+import { PAGINATION_DEFAULT_LIMIT } from '@/lib/constants'
 
 export async function GET(request: NextRequest) {
   try {
     await requireAdmin()
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '20')
+    const limit = parseInt(searchParams.get('limit') || String(PAGINATION_DEFAULT_LIMIT))
     const search = searchParams.get('search') || ''
     const status = searchParams.get('status') || 'all' // all, active, expired
 

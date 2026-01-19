@@ -4,9 +4,10 @@ import { eq, and } from 'drizzle-orm'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
 import { z } from 'zod'
+import { MAX_DEVICE_NICKNAME_LENGTH } from '@/lib/constants/validation'
 
 const updateSchema = z.object({
-  nickname: z.string().max(50).optional(),
+  nickname: z.string().max(MAX_DEVICE_NICKNAME_LENGTH).optional(),
 })
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

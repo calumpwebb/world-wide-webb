@@ -2,6 +2,11 @@ import nodemailer from 'nodemailer'
 import { Resend } from 'resend'
 import { escapeHtml } from './utils'
 import { SMTP_DEFAULT_PORT } from './constants'
+import {
+  EMAIL_FROM_DEFAULT,
+  EMAIL_SUBJECT_VERIFICATION,
+  EMAIL_SUBJECT_ADMIN_NEW_GUEST,
+} from './constants/email'
 
 const provider = process.env.EMAIL_PROVIDER || 'mailpit'
 
@@ -22,10 +27,10 @@ const mailpitTransport = nodemailer.createTransport({
 // Resend client (production)
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 
-const fromEmail = process.env.EMAIL_FROM || 'World Wide Webb <wifi@worldwidewebb.co>'
+const fromEmail = process.env.EMAIL_FROM || EMAIL_FROM_DEFAULT
 
 export async function sendVerificationEmail(email: string, code: string, name: string) {
-  const subject = 'Your verification code for World Wide Webb'
+  const subject = EMAIL_SUBJECT_VERIFICATION
   const html = `
     <!DOCTYPE html>
     <html>
@@ -121,7 +126,7 @@ export async function sendAdminNotification(guest: {
   authorizedAt: Date
   expiresAt: Date
 }) {
-  const subject = 'New guest connected to World Wide Webb'
+  const subject = EMAIL_SUBJECT_ADMIN_NEW_GUEST
   const html = `
     <!DOCTYPE html>
     <html>

@@ -105,3 +105,29 @@ export function sanitizeName(name: string): string {
 export function sanitizeEmail(email: string): string {
   return escapeHtml(email.trim().toLowerCase())
 }
+
+/**
+ * Convert RSSI (Received Signal Strength Indicator) to signal strength percentage
+ *
+ * RSSI values from WiFi devices typically range from -100 dBm (worst) to 0 dBm (best).
+ * This function converts RSSI to a percentage where:
+ * - RSSI = -100 dBm → 0% (no signal)
+ * - RSSI = 0 dBm → 100% (perfect signal)
+ *
+ * The formula: `RSSI + 100` converts the -100 to 0 range into 0 to 100.
+ * We clamp the result to ensure it stays within 0-100% bounds.
+ *
+ * @param rssi - RSSI value in dBm (typically -100 to 0)
+ * @returns Signal strength percentage (0-100)
+ *
+ * @example
+ * ```typescript
+ * calculateSignalStrength(-50)  // Returns: 50 (good signal)
+ * calculateSignalStrength(-100) // Returns: 0 (no signal)
+ * calculateSignalStrength(0)    // Returns: 100 (perfect signal)
+ * calculateSignalStrength(-120) // Returns: 0 (clamped, below minimum)
+ * ```
+ */
+export function calculateSignalStrength(rssi: number): number {
+  return Math.min(100, Math.max(0, rssi + 100))
+}

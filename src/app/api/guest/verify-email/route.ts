@@ -10,10 +10,11 @@ import {
   VERIFICATION_CODE_EXPIRY_MINUTES,
   ONE_HOUR_MS,
 } from '@/lib/constants'
+import { MAX_NAME_LENGTH } from '@/lib/constants/validation'
 
 const requestSchema = z.object({
   email: z.string().email('Invalid email address'),
-  name: z.string().min(1, 'Name is required').max(100),
+  name: z.string().min(1, 'Name is required').max(MAX_NAME_LENGTH),
   macAddress: z.string().optional(),
 })
 
