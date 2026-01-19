@@ -146,18 +146,25 @@ export async function GET() {
       // Return empty list when Unifi is not available
     }
 
-    return NextResponse.json({
-      clients,
-      stats: {
-        total: totalClients,
-        guests: guestClients,
-        wired: wiredClients,
-        wireless: wirelessClients,
-        authorized: authorizedGuests.length,
+    return NextResponse.json(
+      {
+        clients,
+        stats: {
+          total: totalClients,
+          guests: guestClients,
+          wired: wiredClients,
+          wireless: wirelessClients,
+          authorized: authorizedGuests.length,
+        },
+        unifiConnected,
+        timestamp: new Date().toISOString(),
       },
-      unifiConnected,
-      timestamp: new Date().toISOString(),
-    })
+      {
+        headers: {
+          'Cache-Control': 'private, max-age=30, stale-while-revalidate=60',
+        },
+      }
+    )
   } catch (error) {
     if (error instanceof AdminAuthError) {
       return NextResponse.json(

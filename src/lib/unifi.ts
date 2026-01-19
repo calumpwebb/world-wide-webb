@@ -21,9 +21,14 @@ const PASSWORD = process.env.UNIFI_PASSWORD || ''
 const SITE = process.env.UNIFI_SITE || 'default'
 const SKIP_SSL = process.env.UNIFI_SKIP_SSL_VERIFY === 'true'
 
-// Create custom https agent to skip SSL verification for self-signed certs
+// Create custom https agent with connection pooling and keep-alive
 const httpsAgent = new https.Agent({
   rejectUnauthorized: !SKIP_SSL,
+  keepAlive: true,
+  keepAliveMsecs: 30000, // Keep connections alive for 30 seconds
+  maxSockets: 10, // Allow up to 10 concurrent connections
+  maxFreeSockets: 5, // Keep up to 5 idle connections in the pool
+  timeout: 60000, // Connection timeout: 60 seconds
 })
 
 interface UnifiClient {

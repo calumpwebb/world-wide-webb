@@ -151,15 +151,22 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    return NextResponse.json({
-      events: formattedEvents,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
+    return NextResponse.json(
+      {
+        events: formattedEvents,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
       },
-    })
+      {
+        headers: {
+          'Cache-Control': 'private, max-age=30, stale-while-revalidate=60',
+        },
+      }
+    )
   } catch (error) {
     if (error instanceof AdminAuthError) {
       return NextResponse.json(

@@ -133,12 +133,15 @@ export async function syncConnectionEvents(): Promise<SyncResult> {
     lastSeenMacs = currentMacs
     lastSyncTime = Date.now()
 
-    // Update lastSeen timestamp for all connected guests
-    for (const mac of Array.from(currentMacs)) {
+    // Batch update lastSeen timestamp for all connected guests
+    if (currentMacs.size > 0) {
       try {
-        db.update(guests).set({ lastSeen: now }).where(eq(guests.macAddress, mac)).run()
+        db.update(guests)
+          .set({ lastSeen: now })
+          .where(inArray(guests.macAddress, Array.from(currentMacs)))
+          .run()
       } catch (err) {
-        console.error(`Failed to update lastSeen for MAC ${mac}:`, err)
+        console.error(`Failed to batch update lastSeen:`, err)
       }
     }
 
@@ -209,20 +212,38 @@ export async function cacheDPIStats(): Promise<SyncResult> {
     const now = new Date()
     let cached = 0
 
-    for (const client of activeClients) {
-      // Skip if no MAC
-      if (!client.mac) continue
+    // Batch load all guest records for active MACs to avoid N+1 queries
+    const activeMacs = activeClients.filter((c) => c.mac).map((c) => c.mac.toLowerCase())
 
-      const mac = client.mac.toLowerCase()
+    const guestRecords = db
+      .select({
+        macAddress: guests.macAddress,
+      })
+      .from(guests)
+      .where(inArray(guests.macAddress, activeMacs))
+      .all()
 
-      // Check if this MAC belongs to a guest
-      const guest = db.select().from(guests).where(eq(guests.macAddress, mac)).get()
+    // Create a set for O(1) lookups
+    const guestMacs = new Set(guestRecords.map((g) => g.macAddress))
 
-      if (!guest) continue
+    // Fetch DPI stats for all guest MACs in parallel
+    const dpiPromises = activeClients
+      .filter((client) => client.mac && guestMacs.has(client.mac.toLowerCase()))
+      .map(async (client) => {
+        const mac = client.mac.toLowerCase()
+        try {
+          const dpiStats = await unifi.getDPIStats(mac)
+          return { mac, client, dpiStats }
+        } catch (err) {
+          console.error(`Failed to fetch DPI stats for MAC ${mac}:`, err)
+          return { mac, client, dpiStats: null }
+        }
+      })
 
-      // Get DPI stats for this client
-      const dpiStats = await unifi.getDPIStats(mac)
+    const dpiResults = await Promise.all(dpiPromises)
 
+    // Process and insert stats for each client
+    for (const { mac, client, dpiStats } of dpiResults) {
       // Calculate total bytes from DPI categories
       let totalRx = 0
       let totalTx = 0
