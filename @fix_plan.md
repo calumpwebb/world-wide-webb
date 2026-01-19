@@ -184,10 +184,10 @@
 
 ### 🔵 P3 - Low Priority (Future Enhancements)
 
-- [x] **Code Cleanup** - ✅ **COMPLETED (2026-01-19)** - Deprecated code removed, magic numbers refactored
+- [x] **Code Cleanup** - ✅ **COMPLETED (2026-01-19)** - Deprecated code removed, magic numbers refactored, JSDoc documentation added
   - [x] Remove deprecated normalizeMac wrapper in src/lib/unifi.ts (replaced all calls with direct imports)
   - [x] Replace magic numbers with named constants (e.g., 600000 → CODE_EXPIRY_MS)
-  - [ ] Add JSDoc comments to complex functions
+  - [x] Add JSDoc comments to complex functions (9+ critical functions documented)
   - [ ] Extract hardcoded values to configuration
 
 - [ ] **Performance Optimization**
@@ -219,7 +219,24 @@
 ## Notes
 
 ### Recent Enhancements (2026-01-19 PM)
-- **Secrets Generation Script** (Latest - 2026-01-19 PM): Automated secure secrets generation for project setup
+- **JSDoc Documentation** (Latest - 2026-01-19 PM): Comprehensive documentation for critical functions
+  - Added detailed JSDoc comments to 9+ complex functions across 4 core library files
+  - Documented functions:
+    - `checkRateLimit()`, `getRateLimitStatus()`, `resetRateLimit()`, `formatRateLimitError()` (rate-limit.ts)
+    - `syncAuthorizationMismatches()`, `syncConnectionEvents()`, `cacheDPIStats()` (cron.ts)
+    - `login()`, `request<T>()` (unifi.ts)
+    - `sanitizeName()` (utils.ts)
+  - Documentation includes:
+    - State machine logic and transitions (rate limiting)
+    - Security implications (XSS prevention, timing attacks)
+    - Performance optimizations (N+1 query prevention, batch loading)
+    - Auto-retry mechanisms and session management
+    - Generic type usage and comprehensive examples
+    - Error handling and fallback behavior
+  - Benefits: Easier onboarding, better IDE intellisense, reduced risk of bugs from misunderstanding
+  - Commit: cdaf6a4 (305 lines added across 4 files)
+  - All 39 unit tests passing, no functional changes
+- **Secrets Generation Script** (2026-01-19 PM): Automated secure secrets generation for project setup
   - Created scripts/generate-secrets.ts with interactive and automatic modes
   - Interactive mode (`pnpm generate-secrets`): Guided setup with prompts for all configuration
   - Automatic mode (`pnpm generate-secrets:auto`): Generates all secrets without prompting
