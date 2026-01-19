@@ -8,13 +8,13 @@
 
 - [x] **Project Setup & Dependencies** - Initialize Next.js 14 with TypeScript, install Tailwind, shadcn/ui, Better Auth, Drizzle ORM, email clients (Mailpit/Resend)
 - [x] **Database Schema & Migrations** - Create SQLite schema with Drizzle ORM: users, sessions, guests, verification_codes, activity_logs, rate_limits, network_stats tables with proper indexes
-- [ ] **Better Auth Configuration** - Setup Better Auth with email + password for admin, passwordless for guests, TOTP plugin, session management, rate limiting
-- [ ] **Guest Email Verification API** (`POST /api/guest/verify-email`) - Send 6-digit code, rate limiting (5/hour per email), validation, email service integration
-- [ ] **Guest Code Verification API** (`POST /api/guest/verify-code`) - Verify code (3 attempts), create Better Auth user, authorize MAC on Unifi, save guest record, log auth_success
+- [x] **Better Auth Configuration** - Setup Better Auth with email + password for admin, passwordless for guests, TOTP plugin, session management, rate limiting
+- [x] **Guest Email Verification API** (`POST /api/guest/verify-email`) - Send 6-digit code, rate limiting (5/hour per email), validation, email service integration
+- [x] **Guest Code Verification API** (`POST /api/guest/verify-code`) - Verify code (3 attempts), create Better Auth user, authorize MAC on Unifi, save guest record, log auth_success
 - [ ] **Unifi Controller Client** (`lib/unifi.ts`) - Login, authorize guest, revoke guest, get active clients, get DPI stats, get connection events
-- [ ] **Guest Landing Page** (`/page.tsx` in `(guest)` route) - Email entry form, name field, terms checkbox, dark mode UI (black bg), form validation with Zod, auto-detect MAC from URL
-- [ ] **Guest Verification Page** (`/verify/page.tsx`) - Display 6-digit code input (one-time-code autocomplete), resend code button with cooldown, error handling, rate limit messages
-- [ ] **Guest Success Page** (`/success/page.tsx`) - Welcome message, show expiry countdown, auto-close after 3s (for iOS captive portal), returning guest message
+- [x] **Guest Landing Page** (`/page.tsx` in `(guest)` route) - Email entry form, name field, terms checkbox, dark mode UI (black bg), form validation with Zod, auto-detect MAC from URL
+- [x] **Guest Verification Page** (`/verify/page.tsx`) - Display 6-digit code input (one-time-code autocomplete), resend code button with cooldown, error handling, rate limit messages
+- [x] **Guest Success Page** (`/success/page.tsx`) - Welcome message, show expiry countdown, auto-close after 3s (for iOS captive portal), returning guest message
 - [ ] **Admin Login Page** (`/admin/login/page.tsx`) - Email + password form, forgot password link, dark mode, Better Auth integration, redirect to TOTP setup if not configured
 
 ## Medium Priority
@@ -28,7 +28,7 @@
 - [ ] **Guest Device Management** (`/portal/devices/page.tsx`) - Edit device nicknames, view connection history per MAC, request time extension
 - [ ] **Activity Logging System** (`lib/logger.ts`) - Log all events (connect, disconnect, auth_success, auth_fail, admin actions) with timestamps, user, MAC, IP, JSON details
 - [ ] **Background Sync Jobs** - Connection event sync (every 1 min), DPI stats cache (every 5 min), expiry cleanup, session validation
-- [ ] **Email Service** (`lib/email.ts`) - Verification code emails, admin notification emails, password reset, styled HTML templates
+- [x] **Email Service** (`lib/email.ts`) - Verification code emails, admin notification emails, password reset, styled HTML templates
 - [x] **Git Hooks & Code Quality** - Setup Husky + lint-staged + Prettier + ESLint, pre-commit hook auto-formats code
 - [ ] **Docker Setup** - Dockerfile + docker-compose.yml with app + Mailpit, SQLite volume persistence, environment configuration
 - [ ] **Admin Notifications** - Send email when new guest authorized, guest expiry reminders (24h before), admin dashboard alerts
@@ -37,8 +37,8 @@
 
 - [ ] **Health Check Endpoint** (`GET /api/health`) - Database, Unifi, Email service checks
 - [ ] **Metrics Endpoint** (`GET /api/metrics`) - Guest counts, auth attempts, active devices
-- [ ] **Guest Resend Code** (`POST /api/guest/resend-code`) - 30s cooldown, 3/hour limit, rate limiting
-- [ ] **Guest Status Check** (`GET /api/guest/status?mac=...`) - Check if MAC already authorized, return guest info
+- [x] **Guest Resend Code** (`POST /api/guest/resend-code`) - 30s cooldown, 3/hour limit, rate limiting
+- [x] **Guest Status Check** (`GET /api/guest/status?mac=...`) - Check if MAC already authorized, return guest info
 - [ ] **Admin Revoke Guest** (`POST /api/admin/revoke`) - Revoke access, call Unifi, log admin_revoke event
 - [ ] **Admin Get Guests** (`GET /api/admin/guests`) - Paginated list with filtering, join with Unifi data for online status
 - [ ] **Admin Network Status** (`GET /api/admin/network/status`) - Real-time device data joined with guest info, bandwidth, signal
@@ -57,6 +57,10 @@
 - [x] **Project Setup & Dependencies** - Next.js 14, TypeScript, Tailwind, shadcn/ui, Better Auth, Drizzle ORM, email clients
 - [x] **Database Schema & Migrations** - SQLite schema with users, sessions, guests, verification_codes, activity_logs, rate_limits, network_stats (with indexes)
 - [x] **Git Hooks & Code Quality** - Husky, lint-staged, Prettier, ESLint pre-commit hooks
+- [x] **Better Auth Configuration** - Setup with email+password for admin, passwordless for guests, TOTP plugin
+- [x] **Email Service** - Verification code emails and admin notifications with styled HTML templates
+- [x] **Guest Authentication Flow** - Complete verify-email, verify-code, resend-code, status APIs
+- [x] **Guest UI Pages** - Landing page, verification page, success page with dark mode styling
 
 ## Notes
 

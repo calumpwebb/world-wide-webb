@@ -31,10 +31,8 @@ export const auth = betterAuth({
     updateAge: 60 * 60 * 24, // Update every 24 hours
   },
 
-  // Advanced options
-  advanced: {
-    generateId: () => crypto.randomUUID(),
-  },
+  // Secret for session encryption
+  secret: process.env.BETTER_AUTH_SECRET,
 
   // User fields
   user: {
@@ -49,4 +47,4 @@ export const auth = betterAuth({
 });
 
 export type Session = typeof auth.$Infer.Session;
-export type User = typeof auth.$Infer.User;
+export type User = typeof auth.$Infer.Session.user;
