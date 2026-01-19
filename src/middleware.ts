@@ -9,13 +9,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // Get session cookie
+  const sessionCookie = request.cookies.get('better-auth.session_token')
+
   // Check if it's an admin route (but not login)
   const isAdminRoute = pathname.startsWith('/admin') && pathname !== '/admin/login'
 
   if (isAdminRoute) {
-    // Get session cookie
-    const sessionCookie = request.cookies.get('better-auth.session_token')
-
     if (!sessionCookie) {
       // No session - redirect to login
       return NextResponse.redirect(new URL('/admin/login', request.url))
@@ -24,6 +24,18 @@ export async function middleware(request: NextRequest) {
     // For now, we let the client-side handle role checking and TOTP enforcement
     // The login page and setup-2fa page both check the session and redirect appropriately
     // A more robust solution would validate the session server-side here
+  }
+
+  // Check if it's a portal route (guest self-service)
+  const isPortalRoute = pathname.startsWith('/portal')
+
+  if (isPortalRoute) {
+    if (!sessionCookie) {
+      // No session - redirect to guest login
+      return NextResponse.redirect(new URL('/', request.url))
+    }
+
+    // Client-side handles further auth validation
   }
 
   return NextResponse.next()
