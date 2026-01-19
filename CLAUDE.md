@@ -88,6 +88,40 @@ pnpm db:seed          # Create admin user
 pnpm setup            # All of the above
 ```
 
+## Development Workflow
+
+### Tilt (Recommended)
+
+Use Tilt for the best development experience:
+
+```bash
+tilt up    # Single command starts everything
+```
+
+**What runs:**
+- Mailpit (Docker) - Email testing on ports 1025/8025
+- Migrations (Local) - Auto-applies schema changes
+- Next.js (Local) - Dev server with HMR on port 3000
+
+**Features:**
+- Live reload: Changes to `src/` reflect instantly
+- Smart migrations: Only re-run when schema changes
+- Manual seeding: Click "seed-admin" button in Tilt UI
+- Unified logs: Searchable, color-coded in Tilt dashboard
+- Persistence: SQLite and Mailpit data survives restarts
+
+**Dashboard:** http://localhost:10350
+
+### Manual Development
+
+```bash
+# Start Mailpit (optional - can use Resend directly)
+docker compose -f docker-compose.dev.yml up mailpit
+
+# Start dev server
+pnpm dev
+```
+
 ## Code Quality
 
 - Git hooks (Husky + lint-staged) auto-format on commit

@@ -1,0 +1,50 @@
+# Tilt ignore patterns
+# Files and directories to exclude from Tilt's file watching
+
+# Version control
+.git/
+
+# Build output
+.next/
+out/
+build/
+dist/
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Database and data
+data/
+*.db
+*.db-shm
+*.db-wal
+
+# Logs
+*.log
+.pnpm-debug.log*
+npm-debug.log*
+yarn-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Ralph/Agent files
+.ralph/
+@*.md
+PROMPT.md
+
+# Testing
+coverage/
+.nyc_output/
+
+# SQL migrations (watch via parent directory)
+drizzle/*.sql
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~

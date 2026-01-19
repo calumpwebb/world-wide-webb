@@ -81,6 +81,45 @@ EMAIL_PROVIDER=resend
 RESEND_API_KEY=your-resend-api-key
 ```
 
+## Tilt Development (Recommended)
+
+For the best development experience, use Tilt for a single-command setup with live reload:
+
+### Prerequisites
+- [Tilt](https://docs.tilt.dev/install.html) - `brew install tilt-dev/tap/tilt`
+- Docker (for Mailpit)
+- Node.js 20+ and pnpm
+
+### Usage
+
+```bash
+# Start everything (Next.js dev server + Mailpit + migrations)
+tilt up
+
+# Tilt dashboard opens at http://localhost:10350
+# - View real-time logs (color-coded, searchable)
+# - Click links to open App (port 3000) or Mailpit UI (port 8025)
+# - Click "seed-admin" button to create admin user when needed
+
+# Make code changes → browser auto-refreshes instantly (no rebuild)
+
+# Stop everything (data persists)
+tilt down
+```
+
+### What Tilt Does
+1. Starts Mailpit in Docker (email testing)
+2. Runs database migrations automatically
+3. Starts Next.js dev server with hot module reload
+4. Provides unified dashboard with logs and quick links
+5. Persists SQLite and Mailpit data across restarts
+
+### Benefits vs docker-compose
+- ⚡ **Instant feedback**: Code changes reflect immediately (no Docker rebuild)
+- 🎯 **Unified UI**: All logs, status, and links in one dashboard
+- 🔄 **Smart updates**: Only re-runs migrations when schema changes
+- 🚀 **Faster startup**: 10-20 seconds vs 2-3 minutes for full Docker build
+
 ## Docker Deployment
 
 ```bash
@@ -197,6 +236,13 @@ Runs via `instrumentation.ts` with setInterval:
 
 ## Development Commands
 
+### Tilt (Recommended)
+```bash
+tilt up               # Start full dev environment (Mailpit + migrations + Next.js)
+tilt down             # Stop all services (data persists)
+```
+
+### Manual Development
 ```bash
 pnpm dev              # Start dev server
 pnpm build            # Build for production
