@@ -83,6 +83,9 @@ COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./
 
+# Make entrypoint script executable
+RUN chmod +x /app/scripts/docker-entrypoint.sh
+
 # Create data directory for SQLite with proper permissions
 RUN mkdir -p /app/data && chown -R nextjs:nodejs /app/data
 
@@ -103,5 +106,5 @@ ENV HOSTNAME="0.0.0.0"
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
 
-# Start the application
-CMD ["node", "server.js"]
+# Start with entrypoint that runs migrations first
+CMD ["/app/scripts/docker-entrypoint.sh"]

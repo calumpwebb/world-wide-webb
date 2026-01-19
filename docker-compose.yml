@@ -18,7 +18,7 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV:-production}
       - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
-      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
+      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:-dev-secret-change-in-production-min-32-chars}
       - BETTER_AUTH_URL=${BETTER_AUTH_URL:-http://localhost:3000}
       - DATABASE_PATH=/app/data/captive-portal.db
       - UNIFI_CONTROLLER_URL=${UNIFI_CONTROLLER_URL}
