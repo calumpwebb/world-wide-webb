@@ -1,99 +1,99 @@
-'use client';
+'use client'
 
-import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Loader2, RefreshCw } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ArrowLeft, Loader2, RefreshCw } from 'lucide-react'
 
-const CODE_LENGTH = 6;
-const RESEND_COOLDOWN = 30;
+const CODE_LENGTH = 6
+const RESEND_COOLDOWN = 30
 
 export default function VerifyPage() {
-  const router = useRouter();
-  const [code, setCode] = useState('');
-  const [email, setEmail] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isResending, setIsResending] = useState(false);
-  const [error, setError] = useState('');
-  const [resendCooldown, setResendCooldown] = useState(0);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter()
+  const [code, setCode] = useState('')
+  const [email, setEmail] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [isResending, setIsResending] = useState(false)
+  const [error, setError] = useState('')
+  const [resendCooldown, setResendCooldown] = useState(0)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    const storedEmail = sessionStorage.getItem('guestEmail');
+    const storedEmail = sessionStorage.getItem('verifyEmail')
     if (!storedEmail) {
-      router.push('/');
-      return;
+      router.push('/')
+      return
     }
-    setEmail(storedEmail);
-    inputRef.current?.focus();
-  }, [router]);
+    setEmail(storedEmail)
+    inputRef.current?.focus()
+  }, [router])
 
   useEffect(() => {
     if (resendCooldown > 0) {
-      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
-      return () => clearTimeout(timer);
+      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000)
+      return () => clearTimeout(timer)
     }
-  }, [resendCooldown]);
+  }, [resendCooldown])
 
   const handleCodeChange = (value: string) => {
-    const digits = value.replace(/\D/g, '').slice(0, CODE_LENGTH);
-    setCode(digits);
-    setError('');
+    const digits = value.replace(/\D/g, '').slice(0, CODE_LENGTH)
+    setCode(digits)
+    setError('')
 
     if (digits.length === CODE_LENGTH) {
-      handleSubmit(digits);
+      handleSubmit(digits)
     }
-  };
+  }
 
   const handleSubmit = async (submittedCode?: string) => {
-    const codeToSubmit = submittedCode || code;
-    if (codeToSubmit.length !== CODE_LENGTH || isLoading) return;
+    const codeToSubmit = submittedCode || code
+    if (codeToSubmit.length !== CODE_LENGTH || isLoading) return
 
-    setIsLoading(true);
-    setError('');
+    setIsLoading(true)
+    setError('')
 
     try {
       const response = await fetch('/api/guest/verify-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, code: codeToSubmit }),
-      });
+      })
 
-      const data = await response.json();
+      const data = await response.json()
 
       if (!response.ok) {
-        setError(data.error || 'Verification failed');
-        setCode('');
-        setIsLoading(false);
+        setError(data.error || 'Verification failed')
+        setCode('')
+        setIsLoading(false)
 
         if (data.expired) {
-          setTimeout(() => router.push('/'), 2000);
+          setTimeout(() => router.push('/'), 2000)
         }
-        return;
+        return
       }
 
-      sessionStorage.setItem('authSuccess', JSON.stringify(data));
-      sessionStorage.removeItem('guestEmail');
-      sessionStorage.removeItem('guestName');
-      sessionStorage.removeItem('guestMac');
-      router.push('/success');
+      sessionStorage.setItem('authSuccess', JSON.stringify(data))
+      sessionStorage.removeItem('verifyEmail')
+      sessionStorage.removeItem('verifyName')
+      sessionStorage.removeItem('verifyMac')
+      router.push('/success')
     } catch {
-      setError('Network error. Please try again.');
-      setIsLoading(false);
+      setError('Network error. Please try again.')
+      setIsLoading(false)
     }
-  };
+  }
 
   const handleResend = async () => {
-    if (isResending || resendCooldown > 0) return;
+    if (isResending || resendCooldown > 0) return
 
-    setIsResending(true);
-    setError('');
+    setIsResending(true)
+    setError('')
 
     try {
-      const name = sessionStorage.getItem('guestName') || 'Guest';
-      const macAddress = sessionStorage.getItem('guestMac') || '';
+      const name = sessionStorage.getItem('verifyName') || 'Guest'
+      const macAddress = sessionStorage.getItem('verifyMac') || ''
       const response = await fetch('/api/guest/verify-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -103,26 +103,24 @@ export default function VerifyPage() {
           macAddress,
           agreedToTerms: true,
         }),
-      });
+      })
 
-      const data = await response.json();
+      const data = await response.json()
 
       if (!response.ok) {
-        setError(data.error || 'Failed to resend code');
+        setError(data.error || 'Failed to resend code')
       } else {
-        setResendCooldown(RESEND_COOLDOWN);
-        setCode('');
+        setResendCooldown(RESEND_COOLDOWN)
+        setCode('')
       }
     } catch {
-      setError('Network error. Please try again.');
+      setError('Network error. Please try again.')
     } finally {
-      setIsResending(false);
+      setIsResending(false)
     }
-  };
+  }
 
-  const maskedEmail = email
-    ? email.replace(/(.{2})(.*)(@.*)/, '$1***$3')
-    : '';
+  const maskedEmail = email ? email.replace(/(.{2})(.*)(@.*)/, '$1***$3') : ''
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4">
@@ -210,5 +208,5 @@ export default function VerifyPage() {
         Check your spam folder if you don&apos;t see it.
       </p>
     </main>
-  );
+  )
 }
