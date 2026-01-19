@@ -8,8 +8,6 @@
   }
 }
 
-
-
 @layer base {
   /* Dark mode is the default - true black background for minimal Apple aesthetic */
   :root {
@@ -40,8 +38,6 @@
     --radius: 0.5rem;
   }
 }
-
-
 
 @layer base {
   * {

@@ -98,12 +98,8 @@
           "name": "account_userId_user_id_fk",
           "tableFrom": "account",
           "tableTo": "user",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -168,23 +164,17 @@
       "indexes": {
         "idx_logs_user": {
           "name": "idx_logs_user",
-          "columns": [
-            "userId"
-          ],
+          "columns": ["userId"],
           "isUnique": false
         },
         "idx_logs_type": {
           "name": "idx_logs_type",
-          "columns": [
-            "eventType"
-          ],
+          "columns": ["eventType"],
           "isUnique": false
         },
         "idx_logs_created": {
           "name": "idx_logs_created",
-          "columns": [
-            "createdAt"
-          ],
+          "columns": ["createdAt"],
           "isUnique": false
         }
       },
@@ -193,12 +183,8 @@
           "name": "activity_logs_userId_user_id_fk",
           "tableFrom": "activity_logs",
           "tableTo": "user",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -285,23 +271,17 @@
       "indexes": {
         "idx_guests_mac": {
           "name": "idx_guests_mac",
-          "columns": [
-            "macAddress"
-          ],
+          "columns": ["macAddress"],
           "isUnique": false
         },
         "idx_guests_expires": {
           "name": "idx_guests_expires",
-          "columns": [
-            "expiresAt"
-          ],
+          "columns": ["expiresAt"],
           "isUnique": false
         },
         "idx_guests_user": {
           "name": "idx_guests_user",
-          "columns": [
-            "userId"
-          ],
+          "columns": ["userId"],
           "isUnique": false
         }
       },
@@ -310,12 +290,8 @@
           "name": "guests_userId_user_id_fk",
           "tableFrom": "guests",
           "tableTo": "user",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -389,16 +365,12 @@
       "indexes": {
         "idx_stats_mac": {
           "name": "idx_stats_mac",
-          "columns": [
-            "macAddress"
-          ],
+          "columns": ["macAddress"],
           "isUnique": false
         },
         "idx_stats_timestamp": {
           "name": "idx_stats_timestamp",
-          "columns": [
-            "timestamp"
-          ],
+          "columns": ["timestamp"],
           "isUnique": false
         }
       },
@@ -457,10 +429,7 @@
       "indexes": {
         "idx_rate_identifier": {
           "name": "idx_rate_identifier",
-          "columns": [
-            "identifier",
-            "action"
-          ],
+          "columns": ["identifier", "action"],
           "isUnique": false
         }
       },
@@ -532,9 +501,7 @@
       "indexes": {
         "session_token_unique": {
           "name": "session_token_unique",
-          "columns": [
-            "token"
-          ],
+          "columns": ["token"],
           "isUnique": true
         }
       },
@@ -543,12 +510,8 @@
           "name": "session_userId_user_id_fk",
           "tableFrom": "session",
           "tableTo": "user",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -602,12 +565,8 @@
           "name": "twoFactor_userId_user_id_fk",
           "tableFrom": "twoFactor",
           "tableTo": "user",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -696,9 +655,7 @@
       "indexes": {
         "user_email_unique": {
           "name": "user_email_unique",
-          "columns": [
-            "email"
-          ],
+          "columns": ["email"],
           "isUnique": true
         }
       },
@@ -794,16 +751,12 @@
       "indexes": {
         "idx_verification_email": {
           "name": "idx_verification_email",
-          "columns": [
-            "email"
-          ],
+          "columns": ["email"],
           "isUnique": false
         },
         "idx_verification_code": {
           "name": "idx_verification_code",
-          "columns": [
-            "code"
-          ],
+          "columns": ["code"],
           "isUnique": false
         }
       },

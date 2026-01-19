@@ -1,75 +1,75 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { CheckCircle2, Wifi } from 'lucide-react';
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { CheckCircle2, Wifi } from 'lucide-react'
 
-const AUTO_CLOSE_DELAY = 3000;
+const AUTO_CLOSE_DELAY = 3000
 
 interface AuthData {
-  success: boolean;
-  expiresAt: string;
+  success: boolean
+  expiresAt: string
   user: {
-    name: string;
-    email: string;
-  };
+    name: string
+    email: string
+  }
 }
 
 export default function SuccessPage() {
-  const router = useRouter();
-  const [authData, setAuthData] = useState<AuthData | null>(null);
-  const [countdown, setCountdown] = useState(AUTO_CLOSE_DELAY / 1000);
+  const router = useRouter()
+  const [authData, setAuthData] = useState<AuthData | null>(null)
+  const [countdown, setCountdown] = useState(AUTO_CLOSE_DELAY / 1000)
 
   useEffect(() => {
-    const stored = sessionStorage.getItem('authSuccess');
+    const stored = sessionStorage.getItem('authSuccess')
     if (!stored) {
-      router.push('/');
-      return;
+      router.push('/')
+      return
     }
 
     try {
-      const data = JSON.parse(stored) as AuthData;
-      setAuthData(data);
-      sessionStorage.removeItem('authSuccess');
+      const data = JSON.parse(stored) as AuthData
+      setAuthData(data)
+      sessionStorage.removeItem('authSuccess')
     } catch {
-      router.push('/');
+      router.push('/')
     }
-  }, [router]);
+  }, [router])
 
   useEffect(() => {
-    if (!authData) return;
+    if (!authData) return
 
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
-          clearInterval(timer);
+          clearInterval(timer)
           // Attempt to close the window (for captive portal)
-          window.close();
-          return 0;
+          window.close()
+          return 0
         }
-        return prev - 1;
-      });
-    }, 1000);
+        return prev - 1
+      })
+    }, 1000)
 
-    return () => clearInterval(timer);
-  }, [authData]);
+    return () => clearInterval(timer)
+  }, [authData])
 
   const formatExpiry = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diff = date.getTime() - now.getTime();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    return `${days} days`;
-  };
+    const date = new Date(dateString)
+    const now = new Date()
+    const diff = date.getTime() - now.getTime()
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+    return `${days} days`
+  }
 
   if (!authData) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center p-4">
         <div className="animate-pulse text-muted-foreground">Loading...</div>
       </main>
-    );
+    )
   }
 
   return (
@@ -107,11 +107,7 @@ export default function SuccessPage() {
             <p>You can now browse the internet freely.</p>
           </div>
 
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => window.close()}
-          >
+          <Button variant="outline" className="w-full" onClick={() => window.close()}>
             Close this window
           </Button>
         </CardContent>
@@ -121,5 +117,5 @@ export default function SuccessPage() {
         Need help? Contact the network administrator.
       </p>
     </main>
-  );
+  )
 }

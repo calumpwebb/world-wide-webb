@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core'
 
 // Better Auth User Table
 export const users = sqliteTable('user', {
@@ -7,12 +7,14 @@ export const users = sqliteTable('user', {
   emailVerified: integer('emailVerified', { mode: 'boolean' }).default(false),
   name: text('name'),
   password: text('password'), // NULL for guests (passwordless)
-  role: text('role', { enum: ['guest', 'admin'] }).notNull().default('guest'),
+  role: text('role', { enum: ['guest', 'admin'] })
+    .notNull()
+    .default('guest'),
   twoFactorEnabled: integer('twoFactorEnabled', { mode: 'boolean' }).default(false),
   twoFactorSecret: text('twoFactorSecret'), // TOTP secret (admin only)
   createdAt: integer('createdAt', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   updatedAt: integer('updatedAt', { mode: 'timestamp' }).$defaultFn(() => new Date()),
-});
+})
 
 // Better Auth Session Table
 export const sessions = sqliteTable('session', {
@@ -26,7 +28,7 @@ export const sessions = sqliteTable('session', {
   userAgent: text('userAgent'),
   createdAt: integer('createdAt', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   updatedAt: integer('updatedAt', { mode: 'timestamp' }).$defaultFn(() => new Date()),
-});
+})
 
 // Better Auth Account Table (for OAuth providers, if needed)
 export const accounts = sqliteTable('account', {
@@ -44,7 +46,7 @@ export const accounts = sqliteTable('account', {
   password: text('password'),
   createdAt: integer('createdAt', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   updatedAt: integer('updatedAt', { mode: 'timestamp' }).$defaultFn(() => new Date()),
-});
+})
 
 // Better Auth Verification Table
 export const verifications = sqliteTable('verification', {
@@ -54,7 +56,7 @@ export const verifications = sqliteTable('verification', {
   expiresAt: integer('expiresAt', { mode: 'timestamp' }).notNull(),
   createdAt: integer('createdAt', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   updatedAt: integer('updatedAt', { mode: 'timestamp' }).$defaultFn(() => new Date()),
-});
+})
 
 // Two-Factor Authentication (TOTP for admin)
 export const twoFactors = sqliteTable('twoFactor', {
@@ -65,7 +67,7 @@ export const twoFactors = sqliteTable('twoFactor', {
   secret: text('secret').notNull(),
   backupCodes: text('backupCodes'), // JSON array of backup codes
   createdAt: integer('createdAt', { mode: 'timestamp' }).$defaultFn(() => new Date()),
-});
+})
 
 // Guest Network Authorization
 export const guests = sqliteTable(
@@ -89,7 +91,7 @@ export const guests = sqliteTable(
     expiresIdx: index('idx_guests_expires').on(table.expiresAt),
     userIdx: index('idx_guests_user').on(table.userId),
   })
-);
+)
 
 // Email Verification Codes (2FA for guest auth)
 export const verificationCodes = sqliteTable(
@@ -111,7 +113,7 @@ export const verificationCodes = sqliteTable(
     emailIdx: index('idx_verification_email').on(table.email),
     codeIdx: index('idx_verification_code').on(table.code),
   })
-);
+)
 
 // Activity Logs
 export const activityLogs = sqliteTable(
@@ -143,7 +145,7 @@ export const activityLogs = sqliteTable(
     typeIdx: index('idx_logs_type').on(table.eventType),
     createdIdx: index('idx_logs_created').on(table.createdAt),
   })
-);
+)
 
 // Rate Limiting
 export const rateLimits = sqliteTable(
@@ -159,7 +161,7 @@ export const rateLimits = sqliteTable(
   (table) => ({
     identifierIdx: index('idx_rate_identifier').on(table.identifier, table.action),
   })
-);
+)
 
 // Network Statistics (cached from Unifi)
 export const networkStats = sqliteTable(
@@ -178,15 +180,15 @@ export const networkStats = sqliteTable(
     macIdx: index('idx_stats_mac').on(table.macAddress),
     timestampIdx: index('idx_stats_timestamp').on(table.timestamp),
   })
-);
+)
 
 // Type exports for use in application
-export type User = typeof users.$inferSelect;
-export type NewUser = typeof users.$inferInsert;
-export type Session = typeof sessions.$inferSelect;
-export type Guest = typeof guests.$inferSelect;
-export type NewGuest = typeof guests.$inferInsert;
-export type VerificationCode = typeof verificationCodes.$inferSelect;
-export type NewVerificationCode = typeof verificationCodes.$inferInsert;
-export type ActivityLog = typeof activityLogs.$inferSelect;
-export type NewActivityLog = typeof activityLogs.$inferInsert;
+export type User = typeof users.$inferSelect
+export type NewUser = typeof users.$inferInsert
+export type Session = typeof sessions.$inferSelect
+export type Guest = typeof guests.$inferSelect
+export type NewGuest = typeof guests.$inferInsert
+export type VerificationCode = typeof verificationCodes.$inferSelect
+export type NewVerificationCode = typeof verificationCodes.$inferInsert
+export type ActivityLog = typeof activityLogs.$inferSelect
+export type NewActivityLog = typeof activityLogs.$inferInsert

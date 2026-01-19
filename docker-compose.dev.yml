@@ -10,8 +10,8 @@ services:
     container_name: world-wide-webb-mailpit
     restart: unless-stopped
     ports:
-      - "8025:8025"  # Web UI - Access at http://localhost:8025
-      - "1025:1025"  # SMTP - Configure app to send to localhost:1025
+      - '8025:8025' # Web UI - Access at http://localhost:8025
+      - '1025:1025' # SMTP - Configure app to send to localhost:1025
     environment:
       - MP_MAX_MESSAGES=500
       - MP_DATA_FILE=/data/mailpit.db
