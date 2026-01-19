@@ -16,6 +16,7 @@ import {
   Bell,
   Info,
   X,
+  Settings,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -242,6 +243,9 @@ export default function AdminDashboard() {
               ) : (
                 <RefreshCw className="h-4 w-4" />
               )}
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => router.push('/admin/settings')}>
+              <Settings className="h-4 w-4" />
             </Button>
             <Button variant="outline" size="sm" onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />

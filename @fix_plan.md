@@ -48,7 +48,7 @@
 - [x] **Backup Codes Validation** - Allow admin login with backup codes if TOTP device lost
 - [ ] **Reverse Proxy Docs** - Caddy/Nginx config for HTTPS, production recommendations, firewall rules
 - [ ] **Monitoring Setup** - UptimeRobot config, error alerts, email on health check failures
-- [ ] **Admin Settings Page** (`/admin/settings`) - Change password, regenerate TOTP, disable 2FA, notification preferences
+- [x] **Admin Settings Page** (`/admin/settings`) - Change password, regenerate TOTP, disable 2FA, notification preferences
 
 ## Completed
 
@@ -69,6 +69,8 @@
 - [x] **Metrics Endpoint** (`GET /api/metrics`) - Guest counts, auth attempts, active devices, admin stats
 - [x] **Background Sync Jobs** - instrumentation.ts with setInterval for connection sync, DPI cache, cleanup jobs, expiry reminders
 - [x] **Admin Notifications** - Email on new guest, expiry reminders (24h before), dashboard alerts API (`/api/admin/alerts`)
+- [x] **Rate Limiting Helper** (`lib/rate-limit.ts`) - Generic checkRateLimit, resetRateLimit, getRateLimitStatus, formatRateLimitError functions
+- [x] **Admin Settings Page** (`/admin/settings`) - Change password, regenerate TOTP (via disable+re-enable flow), generate new backup codes
 
 ## Notes
 
