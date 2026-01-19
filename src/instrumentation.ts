@@ -7,6 +7,7 @@
  * Jobs:
  * - Connection event sync: every 1 minute
  * - DPI stats cache: every 5 minutes
+ * - Authorization sync: every 5 minutes (DB/Unifi mismatch detection)
  * - Cleanup jobs: every 5 minutes
  * - Expiry reminders: every 5 minutes (but only sends every 12 hours)
  */
@@ -74,8 +75,13 @@ function validateSecrets() {
 export async function register() {
   // Only run on the server (not during build or in edge runtime)
   if (process.env.NEXT_RUNTIME === 'nodejs') {
-    const { runConnectionSync, runDPICache, runCleanupJobs, runExpiryReminders } =
-      await import('./lib/cron-runner')
+    const {
+      runConnectionSync,
+      runDPICache,
+      runAuthorizationSync,
+      runCleanupJobs,
+      runExpiryReminders,
+    } = await import('./lib/cron-runner')
     const { structuredLogger } = await import('./lib/structured-logger')
 
     // Validate secrets first
@@ -126,6 +132,18 @@ export async function register() {
       () => {
         runDPICache().catch((err) =>
           structuredLogger.error('DPI cache job failed', err, { job: 'dpi-cache' })
+        )
+      },
+      5 * 60 * 1000
+    )
+
+    // Authorization sync every 5 minutes
+    setInterval(
+      () => {
+        runAuthorizationSync().catch((err) =>
+          structuredLogger.error('Authorization sync job failed', err, {
+            job: 'authorization-sync',
+          })
         )
       },
       5 * 60 * 1000

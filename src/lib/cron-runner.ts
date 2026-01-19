@@ -8,6 +8,7 @@
 import {
   syncConnectionEvents,
   cacheDPIStats,
+  syncAuthorizationMismatches,
   cleanupExpiredGuests,
   cleanupExpiredSessions,
   cleanupOldStats,
@@ -30,6 +31,20 @@ export async function runDPICache() {
     console.log(`[Cron] DPI cache: ${result.message}`, result.details)
   } else {
     console.error(`[Cron] DPI cache failed: ${result.message}`)
+  }
+  return result
+}
+
+export async function runAuthorizationSync() {
+  const result = await syncAuthorizationMismatches()
+  if (result.success) {
+    // Only log if we actually re-authorized something
+    const reauthorized = (result.details?.reauthorized as number) || 0
+    if (reauthorized > 0) {
+      console.log(`[Cron] Authorization sync: ${result.message}`, result.details)
+    }
+  } else {
+    console.error(`[Cron] Authorization sync failed: ${result.message}`)
   }
   return result
 }

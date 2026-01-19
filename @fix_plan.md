@@ -201,12 +201,26 @@
 - [ ] **Disposable Email Blocking** (PRD line 1702-1721) - Block temporary email services
 - [ ] **Password Reset UI** (PRD line 313-319) - Better Auth provides API, need dedicated route
 - [ ] **Guest Voucher System** (PRD line 2620) - Phase 3 feature, not critical
-- [ ] **DB/Unifi Sync Job** (PRD line 1638-1661) - 5-minute job to detect authorization mismatches
+- [x] **DB/Unifi Sync Job** (PRD line 1638-1661) - ✅ **COMPLETED (2026-01-19)** - 5-minute job to detect and fix authorization mismatches
+  - [x] syncAuthorizationMismatches function in cron.ts
+  - [x] Compares DB guests (not expired) with Unifi authorized guests
+  - [x] Re-authorizes guests on Unifi if mismatch detected
+  - [x] Calculates remaining time and logs admin_extend events
+  - [x] Runs every 5 minutes via instrumentation.ts
+  - [x] Error handling with detailed logging
+  - **Implementation:** Background job that ensures DB and Unifi stay in sync, catches manual revocations or Unifi failures
 
 ## Notes
 
 ### Recent Enhancements (2026-01-19 PM)
-- **Edge Runtime Compatibility Fix** (Latest - 2026-01-19 Evening): Fixed critical middleware crash
+- **DB/Unifi Authorization Sync Job** (Latest - 2026-01-19 Evening): Implemented automated mismatch detection
+  - Created syncAuthorizationMismatches() in src/lib/cron.ts
+  - Runs every 5 minutes to detect guests authorized in DB but not on Unifi
+  - Automatically re-authorizes with correct remaining time
+  - Logs all re-authorizations as admin_extend events
+  - Handles errors gracefully with detailed error messages
+  - Prevents authorization drift between database and Unifi controller
+- **Edge Runtime Compatibility Fix** (Earlier - 2026-01-19 Evening): Fixed critical middleware crash
   - Removed database queries from middleware (Edge runtime doesn't support Node.js fs/sqlite)
   - Middleware now does optimistic cookie-based redirects only (UX optimization)
   - Server-side validation happens in pages/API routes using lib/session.ts helpers

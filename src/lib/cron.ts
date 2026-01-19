@@ -199,6 +199,91 @@ export async function cacheDPIStats(): Promise<SyncResult> {
 }
 
 /**
+ * Sync DB/Unifi authorization mismatches
+ *
+ * Ensures that guests authorized in the database are also authorized on Unifi.
+ * Runs every 5 minutes to catch any authorization failures or manual revocations.
+ */
+export async function syncAuthorizationMismatches(): Promise<SyncResult> {
+  try {
+    const now = new Date()
+
+    // Get currently authorized guests from Unifi
+    const unifiAuthorizations = await unifi.getGuestAuthorizations()
+    const unifiMacs = new Set(
+      unifiAuthorizations.filter((a) => a.authorized).map((a) => a.mac.toLowerCase())
+    )
+
+    // Get guests from DB that should be authorized (not expired)
+    const dbGuests = db
+      .select({
+        id: guests.id,
+        userId: guests.userId,
+        macAddress: guests.macAddress,
+        expiresAt: guests.expiresAt,
+      })
+      .from(guests)
+      .where(gt(guests.expiresAt, now))
+      .all()
+
+    let reauthorized = 0
+    const errors: string[] = []
+
+    // Find mismatches: DB says authorized, Unifi says not
+    for (const guest of dbGuests) {
+      const mac = guest.macAddress.toLowerCase()
+
+      if (!unifiMacs.has(mac)) {
+        // Authorization mismatch detected - re-authorize on Unifi
+        try {
+          // Calculate remaining time in minutes
+          const remainingMs = guest.expiresAt.getTime() - Date.now()
+          const remainingMinutes = Math.max(1, Math.floor(remainingMs / (60 * 1000)))
+
+          const success = await unifi.authorizeGuest(mac, remainingMinutes)
+
+          if (success) {
+            reauthorized++
+            logger.adminExtend({
+              guestUserId: guest.userId,
+              macAddress: mac,
+              guestId: guest.id,
+              newExpiresAt: guest.expiresAt,
+            })
+            console.log(
+              `[Sync] Re-authorized MAC ${mac} for ${remainingMinutes} minutes (expires: ${guest.expiresAt.toISOString()})`
+            )
+          } else {
+            errors.push(`Failed to re-authorize MAC ${mac}: Unifi returned false`)
+          }
+        } catch (err) {
+          errors.push(
+            `Failed to re-authorize MAC ${mac}: ${err instanceof Error ? err.message : 'Unknown error'}`
+          )
+        }
+      }
+    }
+
+    return {
+      success: errors.length === 0,
+      message: `Synced authorizations: ${reauthorized} re-authorized`,
+      details: {
+        dbGuests: dbGuests.length,
+        unifiAuthorizations: unifiMacs.size,
+        reauthorized,
+        errors: errors.length > 0 ? errors : undefined,
+      },
+    }
+  } catch (error) {
+    console.error('Authorization sync error:', error)
+    return {
+      success: false,
+      message: `Authorization sync failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    }
+  }
+}
+
+/**
  * Cleanup expired guest authorizations
  */
 export async function cleanupExpiredGuests(): Promise<SyncResult> {
