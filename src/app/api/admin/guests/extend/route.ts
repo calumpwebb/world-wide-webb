@@ -9,28 +9,30 @@ import { requireAdmin, AdminAuthError } from '@/lib/session'
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
 
-const revokeSchema = z.object({
+const extendSchema = z.object({
   guestIds: z.array(z.number()).min(1, 'At least one guest ID required'),
+  days: z.number().min(1).max(30).default(7), // Extend by 1-30 days (default 7)
 })
 
 export async function POST(request: NextRequest) {
   try {
     await requireAdmin()
     const body = await request.json()
-    const result = revokeSchema.safeParse(body)
+    const result = extendSchema.safeParse(body)
 
     if (!result.success) {
       return NextResponse.json({ error: result.error.issues[0].message }, { status: 400 })
     }
 
-    const { guestIds } = result.data
+    const { guestIds, days } = result.data
 
-    // Get the guests to revoke
-    const guestsToRevoke = db
+    // Get the guests to extend
+    const guestsToExtend = db
       .select({
         id: guests.id,
         macAddress: guests.macAddress,
         userId: guests.userId,
+        expiresAt: guests.expiresAt,
         userName: users.name,
         userEmail: users.email,
       })
@@ -39,55 +41,59 @@ export async function POST(request: NextRequest) {
       .where(inArray(guests.id, guestIds))
       .all()
 
-    if (guestsToRevoke.length === 0) {
+    if (guestsToExtend.length === 0) {
       return NextResponse.json({ error: 'No guests found' }, { status: 404 })
     }
 
-    // Revoke each guest
-    const now = new Date()
+    // Extend each guest
     const results = {
-      revoked: 0,
+      extended: 0,
       failed: 0,
       errors: [] as string[],
     }
 
-    for (const guest of guestsToRevoke) {
+    for (const guest of guestsToExtend) {
       try {
-        // Revoke on Unifi (if connected)
+        // Calculate new expiry - extend from current expiry or now, whichever is later
+        const baseDate = guest.expiresAt > new Date() ? guest.expiresAt : new Date()
+        const newExpiresAt = new Date(baseDate.getTime() + days * 24 * 60 * 60 * 1000)
+
+        // Authorize on Unifi with the new duration
         if (guest.macAddress) {
           try {
-            await unifi.unauthorizeGuest(guest.macAddress)
-            await unifi.kickClient(guest.macAddress)
+            const minutesUntilExpiry = Math.ceil((newExpiresAt.getTime() - Date.now()) / 1000 / 60)
+            await unifi.authorizeGuest(guest.macAddress, minutesUntilExpiry)
           } catch (unifiError) {
-            console.warn(`Failed to revoke on Unifi for MAC ${guest.macAddress}:`, unifiError)
-            // Continue anyway - database revocation is more important
+            console.warn(`Failed to extend on Unifi for MAC ${guest.macAddress}:`, unifiError)
+            // Continue anyway - database extension is more important
           }
         }
 
-        // Update database - set expiry to now
-        db.update(guests).set({ expiresAt: now }).where(eq(guests.id, guest.id)).run()
+        // Update database with new expiry
+        db.update(guests).set({ expiresAt: newExpiresAt }).where(eq(guests.id, guest.id)).run()
 
-        // Log the revocation
-        logger.adminRevoke({
+        // Log the extension
+        logger.adminExtend({
           guestUserId: guest.userId,
           macAddress: guest.macAddress || undefined,
           ipAddress: logger.getClientIP(request.headers),
           guestId: guest.id,
           userName: guest.userName || undefined,
           userEmail: guest.userEmail || undefined,
+          newExpiresAt,
         })
 
-        results.revoked++
+        results.extended++
       } catch (error) {
-        console.error(`Failed to revoke guest ${guest.id}:`, error)
+        console.error(`Failed to extend guest ${guest.id}:`, error)
         results.failed++
-        results.errors.push(`Failed to revoke guest ${guest.id}`)
+        results.errors.push(`Failed to extend guest ${guest.id}`)
       }
     }
 
     return NextResponse.json({
       success: true,
-      revoked: results.revoked,
+      extended: results.extended,
       failed: results.failed,
       errors: results.errors.length > 0 ? results.errors : undefined,
     })
@@ -98,7 +104,7 @@ export async function POST(request: NextRequest) {
         { status: error.code === 'no_2fa' ? 403 : 401 }
       )
     }
-    console.error('Revoke API error:', error)
-    return NextResponse.json({ error: 'Failed to revoke guests' }, { status: 500 })
+    console.error('Extend API error:', error)
+    return NextResponse.json({ error: 'Failed to extend guests' }, { status: 500 })
   }
 }

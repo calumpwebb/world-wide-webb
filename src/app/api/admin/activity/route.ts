@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db, activityLogs, users } from '@/lib/db'
+import { requireAdmin, AdminAuthError } from '@/lib/session'
 
 export const dynamic = 'force-dynamic'
 import { eq, desc, sql, like, or, and, gte, lte } from 'drizzle-orm'
@@ -50,6 +51,7 @@ const EVENT_DESCRIPTIONS: Record<string, (details?: string) => string> = {
 
 export async function GET(request: NextRequest) {
   try {
+    await requireAdmin()
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
@@ -158,6 +160,12 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
+    if (error instanceof AdminAuthError) {
+      return NextResponse.json(
+        { error: 'Unauthorized', code: error.code },
+        { status: error.code === 'no_2fa' ? 403 : 401 }
+      )
+    }
     console.error('Activity API error:', error)
     return NextResponse.json({ error: 'Failed to fetch activity' }, { status: 500 })
   }

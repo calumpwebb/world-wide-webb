@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { db, guests, users, activityLogs } from '@/lib/db'
 import { gt, and, lt, eq, desc, sql } from 'drizzle-orm'
+import { requireAdmin, AdminAuthError } from '@/lib/session'
 
 export interface Alert {
   id: string
@@ -14,6 +15,7 @@ export interface Alert {
 
 export async function GET() {
   try {
+    await requireAdmin()
     const now = new Date()
     const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000)
     const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000)
@@ -125,6 +127,12 @@ export async function GET() {
       },
     })
   } catch (error) {
+    if (error instanceof AdminAuthError) {
+      return NextResponse.json(
+        { error: 'Unauthorized', code: error.code },
+        { status: error.code === 'no_2fa' ? 403 : 401 }
+      )
+    }
     console.error('Alerts API error:', error)
     return NextResponse.json({ error: 'Failed to fetch alerts' }, { status: 500 })
   }

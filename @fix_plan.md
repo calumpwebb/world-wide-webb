@@ -40,6 +40,7 @@
 - [x] **Guest Resend Code** (`POST /api/guest/resend-code`) - 30s cooldown, 3/hour limit, rate limiting
 - [x] **Guest Status Check** (`GET /api/guest/status?mac=...`) - Check if MAC already authorized, return guest info
 - [x] **Admin Revoke Guest** (`POST /api/admin/guests/revoke`) - Revoke access, call Unifi, log admin_revoke event
+- [x] **Admin Extend Guest** (`POST /api/admin/guests/extend`) - Extend guest access by specified days, update Unifi auth, log admin_extend event
 - [x] **Admin Get Guests** (`GET /api/admin/guests`) - Paginated list with filtering, join with Unifi data for online status
 - [x] **Admin Network Status** (`GET /api/admin/network/status`) - Real-time device data joined with guest info, bandwidth, signal
 - [x] **Admin DPI Stats** (`GET /api/admin/dpi?mac=...`) - Fetch domain/app stats from Unifi for specific device
@@ -49,6 +50,7 @@
 - [x] **Reverse Proxy Docs** - Caddy/Nginx config for HTTPS, production recommendations, firewall rules
 - [x] **Monitoring Setup** - UptimeRobot config, error alerts, email on health check failures
 - [x] **Admin Settings Page** (`/admin/settings`) - Change password, regenerate TOTP, disable 2FA, notification preferences
+- [x] **Server-side Session Validation** (`lib/session.ts`) - Session validation helper for API routes with requireAdmin(), requireAuth(), AdminAuthError handling
 
 ## Completed
 

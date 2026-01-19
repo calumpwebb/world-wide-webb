@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server'
 import { db, guests, networkStats } from '@/lib/db'
 import { gt, and, lt, sql } from 'drizzle-orm'
+import { requireAdmin, AdminAuthError } from '@/lib/session'
 
 export async function GET() {
   try {
+    // Validate admin session with 2FA
+    await requireAdmin()
     const now = new Date()
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000)
@@ -62,6 +65,12 @@ export async function GET() {
       totalBandwidth,
     })
   } catch (error) {
+    if (error instanceof AdminAuthError) {
+      return NextResponse.json(
+        { error: 'Unauthorized', code: error.code },
+        { status: error.code === 'no_2fa' ? 403 : 401 }
+      )
+    }
     console.error('Stats API error:', error)
     return NextResponse.json({ error: 'Failed to fetch stats' }, { status: 500 })
   }

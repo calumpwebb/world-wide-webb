@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db, guests, users } from '@/lib/db'
+import { requireAdmin, AdminAuthError } from '@/lib/session'
 
 export const dynamic = 'force-dynamic'
 import { unifi } from '@/lib/unifi'
@@ -7,6 +8,7 @@ import { eq, desc, like, or, sql, gt, lt } from 'drizzle-orm'
 
 export async function GET(request: NextRequest) {
   try {
+    await requireAdmin()
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
@@ -119,6 +121,12 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
+    if (error instanceof AdminAuthError) {
+      return NextResponse.json(
+        { error: 'Unauthorized', code: error.code },
+        { status: error.code === 'no_2fa' ? 403 : 401 }
+      )
+    }
     console.error('Guests API error:', error)
     return NextResponse.json({ error: 'Failed to fetch guests' }, { status: 500 })
   }

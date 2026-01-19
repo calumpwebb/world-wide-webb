@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { unifi } from '@/lib/unifi'
 import { z } from 'zod'
+import { requireAdmin, AdminAuthError } from '@/lib/session'
 
 export const dynamic = 'force-dynamic'
 
@@ -38,6 +39,7 @@ function formatBytes(bytes: number): string {
 
 export async function GET(request: NextRequest) {
   try {
+    await requireAdmin()
     const { searchParams } = new URL(request.url)
     const mac = searchParams.get('mac')
 
@@ -104,6 +106,12 @@ export async function GET(request: NextRequest) {
       available: true,
     })
   } catch (error) {
+    if (error instanceof AdminAuthError) {
+      return NextResponse.json(
+        { error: 'Unauthorized', code: error.code },
+        { status: error.code === 'no_2fa' ? 403 : 401 }
+      )
+    }
     console.error('DPI API error:', error)
     return NextResponse.json({ error: 'Failed to fetch DPI stats' }, { status: 500 })
   }

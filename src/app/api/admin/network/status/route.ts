@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { db, guests, users } from '@/lib/db'
 import { unifi } from '@/lib/unifi'
 import { eq, gt } from 'drizzle-orm'
+import { requireAdmin, AdminAuthError } from '@/lib/session'
 
 interface NetworkClient {
   mac: string
@@ -36,6 +37,7 @@ interface NetworkClient {
 
 export async function GET() {
   try {
+    await requireAdmin()
     const now = new Date()
 
     // Get authorized guests from database
@@ -156,6 +158,12 @@ export async function GET() {
       timestamp: new Date().toISOString(),
     })
   } catch (error) {
+    if (error instanceof AdminAuthError) {
+      return NextResponse.json(
+        { error: 'Unauthorized', code: error.code },
+        { status: error.code === 'no_2fa' ? 403 : 401 }
+      )
+    }
     console.error('Network status API error:', error)
     return NextResponse.json({ error: 'Failed to fetch network status' }, { status: 500 })
   }
