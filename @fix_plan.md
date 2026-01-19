@@ -208,7 +208,16 @@
 ### Missing Features from PRD (Optional)
 
 - [ ] **Disposable Email Blocking** (PRD line 1702-1721) - Block temporary email services
-- [ ] **Password Reset UI** (PRD line 313-319) - Better Auth provides API, need dedicated route
+- [x] **Password Reset UI** (PRD line 313-319) - ✅ **COMPLETED (2026-01-19)** - Complete password reset flow for admin users
+  - [x] Added sendResetPassword configuration to Better Auth (1-hour token expiry)
+  - [x] Created sendPasswordResetEmail() with styled HTML template
+  - [x] Built /admin/forgot-password page with email input form
+  - [x] Built /admin/reset-password page with password validation and token verification
+  - [x] Added "Forgot your password?" link to admin login page
+  - [x] Uses Better Auth API endpoints (/api/auth/forget-password, /api/auth/reset-password)
+  - [x] Security: Never reveals whether email exists (prevents user enumeration)
+  - [x] UX: Clear success/error states, automatic redirect after successful reset
+  - **Implementation:** Email-based password reset with token verification, password confirmation matching, minimum length validation
 - [ ] **Guest Voucher System** (PRD line 2620) - Phase 3 feature, not critical
 - [x] **DB/Unifi Sync Job** (PRD line 1638-1661) - ✅ **COMPLETED (2026-01-19)** - 5-minute job to detect and fix authorization mismatches
   - [x] syncAuthorizationMismatches function in cron.ts
@@ -222,6 +231,34 @@
 ## Notes
 
 ### Recent Enhancements (2026-01-19 - Latest)
+- **Password Reset Feature** (2026-01-19 Latest): Implemented complete admin password reset flow
+  - **Better Auth Configuration**: Added `sendResetPassword` callback with 1-hour token expiry (`resetPasswordTokenExpiresIn: 3600`)
+  - **Email Template**: Created `sendPasswordResetEmail()` in lib/email.ts with dark-themed HTML
+  - **Forgot Password Page** (src/app/admin/forgot-password/page.tsx):
+    - Email input form with validation
+    - Security: Always shows success message regardless of email existence (prevents user enumeration)
+    - Clear instructions for checking spam folder and 1-hour expiry notice
+    - "Back to Login" link for easy navigation
+  - **Reset Password Page** (src/app/admin/reset-password/page.tsx):
+    - Token validation from URL query parameter
+    - Password and confirm password fields with show/hide toggle
+    - Minimum password length validation (MIN_PASSWORD_LENGTH constant)
+    - Password confirmation matching validation
+    - Success state with automatic redirect to login after 3 seconds
+    - Error handling for expired/invalid tokens with option to request new link
+    - Suspense boundary for loading state
+  - **Admin Login Enhancement**: Added "Forgot your password?" link below login button
+  - **API Integration**: Uses Better Auth endpoints (`/api/auth/forget-password`, `/api/auth/reset-password`)
+  - **UX Features**:
+    - Password visibility toggle buttons
+    - Clear error messages with actionable recovery steps
+    - Loading states during form submission
+    - Auto-redirect on success
+    - Clean dark mode styling matching project aesthetic
+  - All 39 unit tests passing, production build successful
+  - ✅ **COMMITTED (2026-01-19)** - Commit 64d2bbf
+
+### Recent Enhancements (2026-01-19 - Earlier)
 - **User Experience Improvements** (2026-01-19 Latest): Enhanced UI feedback and error handling
   - **Loading States**: Added toast notifications for dashboard data fetch errors (admin dashboard now shows error toasts instead of silent failures)
   - **Loading States**: Device name input fields now properly disabled during save operations (prevents concurrent edits)
