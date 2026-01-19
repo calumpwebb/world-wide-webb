@@ -6,8 +6,8 @@
 
 ## High Priority
 
-- [ ] **Project Setup & Dependencies** - Initialize Next.js 14 with TypeScript, install Tailwind, shadcn/ui, Better Auth, Drizzle ORM, email clients (Mailpit/Resend)
-- [ ] **Database Schema & Migrations** - Create SQLite schema with Drizzle ORM: users, sessions, guests, verification_codes, activity_logs, rate_limits, network_stats tables with proper indexes
+- [x] **Project Setup & Dependencies** - Initialize Next.js 14 with TypeScript, install Tailwind, shadcn/ui, Better Auth, Drizzle ORM, email clients (Mailpit/Resend)
+- [x] **Database Schema & Migrations** - Create SQLite schema with Drizzle ORM: users, sessions, guests, verification_codes, activity_logs, rate_limits, network_stats tables with proper indexes
 - [ ] **Better Auth Configuration** - Setup Better Auth with email + password for admin, passwordless for guests, TOTP plugin, session management, rate limiting
 - [ ] **Guest Email Verification API** (`POST /api/guest/verify-email`) - Send 6-digit code, rate limiting (5/hour per email), validation, email service integration
 - [ ] **Guest Code Verification API** (`POST /api/guest/verify-code`) - Verify code (3 attempts), create Better Auth user, authorize MAC on Unifi, save guest record, log auth_success
@@ -29,7 +29,7 @@
 - [ ] **Activity Logging System** (`lib/logger.ts`) - Log all events (connect, disconnect, auth_success, auth_fail, admin actions) with timestamps, user, MAC, IP, JSON details
 - [ ] **Background Sync Jobs** - Connection event sync (every 1 min), DPI stats cache (every 5 min), expiry cleanup, session validation
 - [ ] **Email Service** (`lib/email.ts`) - Verification code emails, admin notification emails, password reset, styled HTML templates
-- [ ] **Git Hooks & Code Quality** - Setup Husky + lint-staged + Prettier + ESLint, pre-commit hook auto-formats code
+- [x] **Git Hooks & Code Quality** - Setup Husky + lint-staged + Prettier + ESLint, pre-commit hook auto-formats code
 - [ ] **Docker Setup** - Dockerfile + docker-compose.yml with app + Mailpit, SQLite volume persistence, environment configuration
 - [ ] **Admin Notifications** - Send email when new guest authorized, guest expiry reminders (24h before), admin dashboard alerts
 
@@ -54,6 +54,9 @@
 ## Completed
 
 - [x] PRD conversion to Ralph format (PROMPT.md + @fix_plan.md + specs/requirements.md)
+- [x] **Project Setup & Dependencies** - Next.js 14, TypeScript, Tailwind, shadcn/ui, Better Auth, Drizzle ORM, email clients
+- [x] **Database Schema & Migrations** - SQLite schema with users, sessions, guests, verification_codes, activity_logs, rate_limits, network_stats (with indexes)
+- [x] **Git Hooks & Code Quality** - Husky, lint-staged, Prettier, ESLint pre-commit hooks
 
 ## Notes
 
