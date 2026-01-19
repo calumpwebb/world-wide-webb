@@ -249,6 +249,9 @@ pnpm build            # Build for production
 pnpm start            # Start production server
 pnpm lint             # Check code quality
 pnpm format           # Auto-format all files
+pnpm test             # Run unit tests (Vitest)
+pnpm test:e2e         # Run E2E tests (Playwright)
+pnpm test:coverage    # Run tests with coverage
 pnpm db:generate      # Generate Drizzle migrations
 pnpm db:migrate       # Run migrations
 pnpm db:push          # Push schema changes
@@ -257,18 +260,57 @@ pnpm db:seed          # Create admin user
 pnpm setup            # Full setup (migrate + seed)
 ```
 
+## Testing
+
+### Unit Tests (Vitest)
+```bash
+pnpm test              # Run all unit tests
+pnpm test:ui           # Interactive test UI
+pnpm test:coverage     # Run with coverage report
+```
+
+Current coverage:
+- ✅ Guest authentication flow (verify-email, verify-code)
+- ✅ Rate limiting enforcement
+- ✅ Input sanitization and XSS prevention
+- ✅ Edge cases (expired codes, Unifi failures)
+
+**Test files**: `src/__tests__/`
+
+### E2E Tests (Playwright)
+```bash
+pnpm test:e2e          # Run all E2E tests
+pnpm test:e2e:ui       # Interactive UI mode
+pnpm test:e2e:headed   # Run with visible browser
+pnpm test:e2e:debug    # Debug mode
+```
+
+Current coverage:
+- ✅ Guest signup flow (email entry, verification, success)
+- ✅ Guest validation (email format, required fields)
+- ✅ Rate limiting UI behavior
+- ✅ Admin login form
+- ✅ Admin TOTP setup
+- ✅ Dashboard authentication
+
+**Test files**: `e2e/`
+
+See `e2e/README.md` for detailed E2E testing documentation.
+
 ## Security Features
 
 - ✅ CSRF protection (Better Auth)
 - ✅ Rate limiting on all public endpoints
 - ✅ Input validation (Zod schemas)
 - ✅ SQL injection prevention (Drizzle ORM parameterized queries)
-- ✅ XSS prevention (React escaping)
+- ✅ XSS prevention (React escaping + input sanitization)
 - ✅ HTTPOnly secure cookies
 - ✅ Password hashing (bcrypt via Better Auth)
 - ✅ TOTP 2FA for admin (Better Auth plugin)
 - ✅ Email verification (6-digit codes)
 - ✅ Secrets in .env (never committed)
+- ✅ Content Security Policy headers
+- ✅ Timing-safe code comparison
 
 ## Key Design Decisions
 

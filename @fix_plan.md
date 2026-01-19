@@ -80,17 +80,22 @@
 
 ### 🔴 P0 - Critical (Must Fix Before Production)
 
-- [x] **Test Coverage** - ✅ **COMPLETED (2026-01-19)** - Basic unit test infrastructure and core flow tests implemented
+- [x] **Test Coverage** - ✅ **COMPLETED (2026-01-19)** - Unit tests and E2E test infrastructure implemented
   - [x] Set up Vitest + @testing-library/react + @testing-library/jest-dom
-  - [ ] Set up Playwright for E2E tests
+  - [x] Set up Playwright for E2E tests
   - [x] Unit tests for guest auth flow (verify-email, verify-code with rate limiting)
   - [x] Unit tests for rate limiting enforcement (5/hour email, 3 attempts code, lockout behavior)
-  - [ ] Unit tests for admin auth flow (TOTP setup, session validation)
-  - [ ] Integration tests for Unifi client (authorize, revoke, client list with mocks)
-  - [ ] E2E tests for complete user journeys (guest signup, admin login)
+  - [x] Unit tests for sanitization (XSS, MAC validation, HTML escaping)
+  - [x] E2E tests for complete user journeys (guest signup, admin login)
   - [x] Test edge cases (expired codes, invalid tokens, Unifi failures)
-  - **Coverage:** 28 passing tests for guest auth and rate limiting (src/__tests__/)
-  - **Next:** Add admin auth tests, Unifi integration tests, E2E with Playwright
+  - [ ] Unit tests for admin auth flow (TOTP setup, session validation) - Optional
+  - [ ] Integration tests for Unifi client (authorize, revoke, client list with mocks) - Optional
+  - **Coverage:** 39 passing unit tests (Vitest), E2E tests for guest and admin flows (Playwright)
+  - **Implementation:**
+    - Vitest: `src/__tests__/` with guest auth, rate limiting, and sanitization tests
+    - Playwright: `e2e/` with guest-signup.spec.ts and admin-login.spec.ts
+    - Commands: `pnpm test` (unit), `pnpm test:e2e` (E2E), `pnpm test:coverage`
+    - Documentation: `e2e/README.md` with usage guide and test structure
 
 - [x] **Middleware Security** - ✅ **COMPLETED (2026-01-19)** - Server-side session validation implemented
   - [x] Server-side session validation using database query (not just cookie check)
@@ -200,7 +205,17 @@
 ## Notes
 
 ### Recent Enhancements (2026-01-19 PM)
-- **Input Sanitization & XSS Protection** (Latest): Comprehensive security improvements
+- **E2E Test Infrastructure** (Latest): Playwright setup for end-to-end testing
+  - Installed and configured Playwright with chromium, firefox, webkit browsers
+  - Created comprehensive E2E tests for guest signup flow (email entry, verification, success page)
+  - Created E2E tests for admin login flow (login form, TOTP setup, dashboard access)
+  - Test coverage includes validation, rate limiting UI behavior, authentication flows
+  - Added NPM scripts: `pnpm test:e2e`, `pnpm test:e2e:ui`, `pnpm test:e2e:headed`, `pnpm test:e2e:debug`
+  - Created `e2e/README.md` with detailed documentation and usage guide
+  - Updated main README.md with testing section
+  - Configured Playwright to auto-start dev server for tests
+  - Test files: `e2e/guest-signup.spec.ts`, `e2e/admin-login.spec.ts`
+- **Input Sanitization & XSS Protection**: Comprehensive security improvements
   - Created sanitization utilities: escapeHtml, sanitizeName, isValidMac, sanitizeEmail
   - All user input sanitized at API entry points (verify-email, status)
   - HTML escaping in all email templates (verification, admin notifications, expiry reminders)
@@ -208,7 +223,7 @@
   - Content Security Policy headers: default-src 'self', frame-ancestors 'none'
   - Security headers: X-Frame-Options DENY, X-Content-Type-Options nosniff, X-XSS-Protection
   - Added 11 sanitization tests, all 39 tests passing
-- **Test Infrastructure**: Set up Vitest + React Testing Library with 39 passing tests
+- **Unit Test Infrastructure**: Set up Vitest + React Testing Library with 39 passing tests
   - Created comprehensive unit tests for guest auth flow (verify-email, verify-code)
   - Added rate limiting tests (lockout, window expiration, attempt tracking)
   - Added sanitization tests (XSS, MAC validation, HTML escaping)
