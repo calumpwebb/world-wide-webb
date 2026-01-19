@@ -5,7 +5,8 @@
 load('ext://dotenv', 'dotenv')
 
 # Load environment variables from .env.local if it exists
-dotenv('.env.local', required=False)
+# The dotenv extension will silently skip if the file doesn't exist
+dotenv('.env.local')
 
 # =============================================================================
 # Configuration
