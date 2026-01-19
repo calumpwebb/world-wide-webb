@@ -4,7 +4,7 @@ import { requireAdmin, AdminAuthError } from '@/lib/session'
 
 export const dynamic = 'force-dynamic'
 import { unifi } from '@/lib/unifi'
-import { eq, desc, like, or, sql, gt, lt } from 'drizzle-orm'
+import { eq, desc, like, or, and, sql, gt, lt } from 'drizzle-orm'
 
 export async function GET(request: NextRequest) {
   try {
@@ -38,49 +38,68 @@ export async function GET(request: NextRequest) {
     }
 
     // Get total count
-    const countQuery = db
-      .select({ count: sql<number>`count(*)` })
-      .from(guests)
-      .leftJoin(users, eq(guests.userId, users.id))
+    const countResult =
+      whereConditions.length > 0
+        ? db
+            .select({ count: sql<number>`count(*)` })
+            .from(guests)
+            .leftJoin(users, eq(guests.userId, users.id))
+            .where(and(...whereConditions))
+            .get()
+        : db
+            .select({ count: sql<number>`count(*)` })
+            .from(guests)
+            .leftJoin(users, eq(guests.userId, users.id))
+            .get()
 
-    if (whereConditions.length > 0) {
-      whereConditions.forEach((condition) => {
-        if (condition) countQuery.where(condition)
-      })
-    }
-
-    const countResult = countQuery.get()
     const total = countResult?.count || 0
 
     // Get paginated guests
-    const query = db
-      .select({
-        id: guests.id,
-        macAddress: guests.macAddress,
-        ipAddress: guests.ipAddress,
-        deviceInfo: guests.deviceInfo,
-        authorizedAt: guests.authorizedAt,
-        expiresAt: guests.expiresAt,
-        lastSeen: guests.lastSeen,
-        authCount: guests.authCount,
-        nickname: guests.nickname,
-        userId: guests.userId,
-        userName: users.name,
-        userEmail: users.email,
-      })
-      .from(guests)
-      .leftJoin(users, eq(guests.userId, users.id))
-      .orderBy(desc(guests.authorizedAt))
-      .limit(limit)
-      .offset(offset)
-
-    if (whereConditions.length > 0) {
-      whereConditions.forEach((condition) => {
-        if (condition) query.where(condition)
-      })
-    }
-
-    const guestList = query.all()
+    const guestList =
+      whereConditions.length > 0
+        ? db
+            .select({
+              id: guests.id,
+              macAddress: guests.macAddress,
+              ipAddress: guests.ipAddress,
+              deviceInfo: guests.deviceInfo,
+              authorizedAt: guests.authorizedAt,
+              expiresAt: guests.expiresAt,
+              lastSeen: guests.lastSeen,
+              authCount: guests.authCount,
+              nickname: guests.nickname,
+              userId: guests.userId,
+              userName: users.name,
+              userEmail: users.email,
+            })
+            .from(guests)
+            .leftJoin(users, eq(guests.userId, users.id))
+            .where(and(...whereConditions))
+            .orderBy(desc(guests.authorizedAt))
+            .limit(limit)
+            .offset(offset)
+            .all()
+        : db
+            .select({
+              id: guests.id,
+              macAddress: guests.macAddress,
+              ipAddress: guests.ipAddress,
+              deviceInfo: guests.deviceInfo,
+              authorizedAt: guests.authorizedAt,
+              expiresAt: guests.expiresAt,
+              lastSeen: guests.lastSeen,
+              authCount: guests.authCount,
+              nickname: guests.nickname,
+              userId: guests.userId,
+              userName: users.name,
+              userEmail: users.email,
+            })
+            .from(guests)
+            .leftJoin(users, eq(guests.userId, users.id))
+            .orderBy(desc(guests.authorizedAt))
+            .limit(limit)
+            .offset(offset)
+            .all()
 
     // Try to get online status from Unifi
     let onlineMACs = new Set<string>()

@@ -12,7 +12,7 @@ import { db, guests, networkStats, sessions, users } from '@/lib/db'
 import { sendExpiryReminder } from '@/lib/email'
 import { logger } from '@/lib/logger'
 import { unifi } from '@/lib/unifi'
-import { eq, lt, gt, and, lte } from 'drizzle-orm'
+import { eq, lt, gt, and, lte, inArray } from 'drizzle-orm'
 
 // Track last seen MACs for connection event detection
 let lastSeenMacs = new Set<string>()
@@ -33,6 +33,20 @@ export async function syncConnectionEvents(): Promise<SyncResult> {
     const currentMacs = new Set(activeClients.map((c) => c.mac.toLowerCase()))
     const now = new Date()
 
+    // Batch load all guest records for active MACs to avoid N+1 queries
+    const allMacs = new Set([...Array.from(currentMacs), ...Array.from(lastSeenMacs)])
+    const guestRecords = db
+      .select({
+        userId: guests.userId,
+        macAddress: guests.macAddress,
+      })
+      .from(guests)
+      .where(inArray(guests.macAddress, Array.from(allMacs)))
+      .all()
+
+    // Create a map for O(1) lookups
+    const guestMap = new Map(guestRecords.map((g) => [g.macAddress, g]))
+
     // Find newly connected devices
     const connected: string[] = []
     const disconnected: string[] = []
@@ -41,16 +55,7 @@ export async function syncConnectionEvents(): Promise<SyncResult> {
       if (!lastSeenMacs.has(mac)) {
         connected.push(mac)
 
-        // Find guest record for this MAC
-        const guest = db
-          .select({
-            userId: guests.userId,
-            macAddress: guests.macAddress,
-          })
-          .from(guests)
-          .where(eq(guests.macAddress, mac))
-          .get()
-
+        const guest = guestMap.get(mac)
         const client = activeClients.find((c) => c.mac.toLowerCase() === mac)
 
         logger.connect({
@@ -69,15 +74,7 @@ export async function syncConnectionEvents(): Promise<SyncResult> {
         if (!currentMacs.has(mac)) {
           disconnected.push(mac)
 
-          // Find guest record for this MAC
-          const guest = db
-            .select({
-              userId: guests.userId,
-              macAddress: guests.macAddress,
-            })
-            .from(guests)
-            .where(eq(guests.macAddress, mac))
-            .get()
+          const guest = guestMap.get(mac)
 
           // Calculate session duration if we have last sync time
           const sessionDuration = Math.floor((Date.now() - lastSyncTime) / 1000)
@@ -97,7 +94,11 @@ export async function syncConnectionEvents(): Promise<SyncResult> {
 
     // Update lastSeen timestamp for all connected guests
     for (const mac of Array.from(currentMacs)) {
-      db.update(guests).set({ lastSeen: now }).where(eq(guests.macAddress, mac)).run()
+      try {
+        db.update(guests).set({ lastSeen: now }).where(eq(guests.macAddress, mac)).run()
+      } catch (err) {
+        console.error(`Failed to update lastSeen for MAC ${mac}:`, err)
+      }
     }
 
     return {
@@ -158,19 +159,22 @@ export async function cacheDPIStats(): Promise<SyncResult> {
       const bytesSent = totalTx || client.tx_bytes || 0
 
       // Insert stats record
-      db.insert(networkStats)
-        .values({
-          macAddress: mac,
-          timestamp: now,
-          bytesReceived,
-          bytesSent,
-          domains: domains.length > 0 ? JSON.stringify(domains) : null,
-          signalStrength: client.rssi,
-          apMacAddress: client.ap_mac,
-        })
-        .run()
-
-      cached++
+      try {
+        db.insert(networkStats)
+          .values({
+            macAddress: mac,
+            timestamp: now,
+            bytesReceived,
+            bytesSent,
+            domains: domains.length > 0 ? JSON.stringify(domains) : null,
+            signalStrength: client.rssi,
+            apMacAddress: client.ap_mac,
+          })
+          .run()
+        cached++
+      } catch (err) {
+        console.error(`Failed to insert network stats for MAC ${mac}:`, err)
+      }
     }
 
     return {

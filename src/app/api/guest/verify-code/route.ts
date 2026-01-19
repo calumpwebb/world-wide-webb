@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger'
 import { unifi } from '@/lib/unifi'
 import { eq, and, gt } from 'drizzle-orm'
 import { z } from 'zod'
-import { randomUUID } from 'crypto'
+import { randomUUID, timingSafeEqual } from 'crypto'
 
 const requestSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -72,8 +72,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify the code
-    if (verification.code !== code) {
+    // Verify the code using constant-time comparison to prevent timing attacks
+    const isCodeValid =
+      verification.code.length === code.length &&
+      timingSafeEqual(Buffer.from(verification.code), Buffer.from(code))
+
+    if (!isCodeValid) {
       // Increment attempts
       try {
         db.update(verificationCodes)

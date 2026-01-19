@@ -11,6 +11,7 @@
  */
 
 import https from 'https'
+import { normalizeMac } from './utils'
 
 const CONTROLLER_URL = process.env.UNIFI_CONTROLLER_URL || 'https://192.168.1.1:8443'
 const USERNAME = process.env.UNIFI_USERNAME || 'admin'
@@ -298,13 +299,10 @@ class UnifiController {
 
   /**
    * Normalize MAC address to lowercase with colons
+   * @deprecated Use the shared normalizeMac from utils instead
    */
   private normalizeMac(mac: string): string {
-    return mac
-      .toLowerCase()
-      .replace(/[^a-f0-9]/g, '')
-      .replace(/(.{2})/g, '$1:')
-      .slice(0, -1)
+    return normalizeMac(mac)
   }
 
   /**
