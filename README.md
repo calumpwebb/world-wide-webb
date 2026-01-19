@@ -374,9 +374,25 @@ worldwidewebb.co {
 
 Private project for home network use.
 
+## Documentation
+
+### API Documentation
+- **[API Reference](docs/API.md)** - Complete API documentation with request/response examples
+- **[OpenAPI Specification](docs/API.yaml)** - Machine-readable API spec (OpenAPI 3.0)
+- **[Error Code Reference](docs/ERROR_CODES.md)** - Comprehensive error handling guide
+
+### Operations & Deployment
+- **[Deployment Guide](DEPLOYMENT.md)** - Production setup, reverse proxy, systemd, Docker
+- **[Monitoring Guide](docs/MONITORING.md)** - Prometheus + Grafana setup with alerting
+- **[Backup Guide](scripts/BACKUP_README.md)** - Database backup/restore procedures
+
+### Development
+- **[E2E Testing](e2e/README.md)** - End-to-end test documentation (Playwright)
+- **[Project Requirements](docs/PRD.md)** - Full PRD with specifications
+- **[Fix Plan](@fix_plan.md)** - Implementation tracking and architecture notes
+
 ## Support
 
 For issues or questions, refer to:
-- **PRD**: `docs/PRD.md` - Full project requirements and specifications
 - **CLAUDE.md**: Project instructions and tech stack details
-- **@fix_plan.md**: Implementation tracking and notes
+- **GitHub Issues**: Report bugs or feature requests

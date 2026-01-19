@@ -1,0 +1,1662 @@
+openapi: 3.0.3
+info:
+  title: World Wide Webb - Captive Portal API
+  description: |
+    Guest WiFi captive portal API with passwordless email authentication.
+
+    ## Authentication
+
+    - **Guest Endpoints**: No auth required for initial verification flow
+    - **Guest Portal**: Requires Better Auth session cookie (guest role)
+    - **Admin Endpoints**: Requires Better Auth session cookie (admin role + TOTP 2FA)
+
+    ## Rate Limiting
+
+    - `POST /api/guest/verify-email`: 5 requests/hour per email
+    - `POST /api/guest/resend-code`: 30s cooldown, 3 requests/hour
+    - `POST /api/guest/verify-code`: 3 attempts per code
+
+    ## Error Handling
+
+    All error responses follow this format:
+    ```json
+    {
+      "error": "Human-readable error message",
+      "code": "ERROR_CODE",
+      "details": { /* optional additional context */ }
+    }
+    ```
+
+    Common HTTP status codes:
+    - `400`: Invalid request data (validation error)
+    - `401`: Authentication required or invalid session
+    - `403`: Insufficient permissions (e.g., admin role required)
+    - `404`: Resource not found
+    - `429`: Rate limit exceeded
+    - `500`: Internal server error
+    - `503`: External service unavailable (e.g., Unifi Controller)
+
+  version: 1.0.0
+  contact:
+    name: World Wide Webb Support
+
+servers:
+  - url: http://localhost:3000
+    description: Development server
+  - url: https://wifi.example.com
+    description: Production server (replace with your domain)
+
+tags:
+  - name: Guest Auth
+    description: Guest authentication and verification flow
+  - name: Guest Portal
+    description: Guest self-service device management
+  - name: Admin - Guests
+    description: Admin guest management operations
+  - name: Admin - Network
+    description: Admin network monitoring and device management
+  - name: Admin - Activity
+    description: Admin activity logs and alerts
+  - name: System
+    description: Health checks and metrics
+
+paths:
+  /api/guest/verify-email:
+    post:
+      tags:
+        - Guest Auth
+      summary: Initiate email verification
+      description: |
+        Send a 6-digit verification code to the provided email address.
+
+        **Rate Limit**: 5 requests per hour per email address
+
+        **Flow**:
+        1. Validate email and name
+        2. Generate 6-digit code (10 minute expiry)
+        3. Send verification email
+        4. Log `code_sent` event
+      operationId: verifyEmail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - name
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: john.doe@example.com
+                  description: Guest email address
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                  example: John Doe
+                  description: Guest full name (XSS sanitized)
+                macAddress:
+                  type: string
+                  pattern: '^[0-9a-fA-F]{12}$'
+                  example: aabbccddeeff
+                  description: Optional MAC address (auto-detected from captive portal)
+      responses:
+        '200':
+          description: Verification code sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Verification code sent to john.doe@example.com
+                  expiresIn:
+                    type: number
+                    example: 600
+                    description: Code expiry in seconds
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Invalid email or name
+                code: VALIDATION_ERROR
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitError'
+              example:
+                error: Too many requests. Please try again in 45 minutes.
+                code: RATE_LIMIT_EXCEEDED
+                retryAfter: 2700
+
+  /api/guest/verify-code:
+    post:
+      tags:
+        - Guest Auth
+      summary: Verify email code and authorize device
+      description: |
+        Verify the 6-digit code and authorize the MAC address on Unifi Controller.
+
+        **Rate Limit**: 3 attempts per code (code invalidated after 3 failures)
+
+        **Flow**:
+        1. Validate code (timing-safe comparison)
+        2. Create/lookup Better Auth user
+        3. Authorize MAC on Unifi (fail-fast if offline)
+        4. Save guest authorization record
+        5. Send admin notification email
+        6. Log `auth_success` event
+      operationId: verifyCode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - code
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: john.doe@example.com
+                code:
+                  type: string
+                  pattern: '^[0-9]{6}$'
+                  example: "123456"
+                  description: 6-digit verification code
+      responses:
+        '200':
+          description: Code verified and device authorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Device authorized successfully
+                  expiresAt:
+                    type: string
+                    format: date-time
+                    example: "2026-01-26T10:30:00.000Z"
+                    description: Authorization expiry timestamp
+                  guestId:
+                    type: number
+                    example: 42
+                  userId:
+                    type: string
+                    example: cm4v8x9y0000008l2b3c4d5e6
+        '400':
+          description: Invalid or expired code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidCode:
+                  value:
+                    error: Invalid or expired verification code
+                    code: INVALID_CODE
+                tooManyAttempts:
+                  value:
+                    error: Too many failed attempts. Request a new code.
+                    code: TOO_MANY_ATTEMPTS
+        '503':
+          description: Unifi Controller unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Unable to authorize device. Please contact administrator.
+                code: UNIFI_UNAVAILABLE
+                details:
+                  recoverySteps:
+                    - Check network connectivity
+                    - Contact administrator if problem persists
+
+  /api/guest/resend-code:
+    post:
+      tags:
+        - Guest Auth
+      summary: Resend verification code
+      description: |
+        Resend verification code to the email address.
+
+        **Rate Limits**:
+        - 30 second cooldown between resends
+        - 3 resends per hour
+
+        **Behavior**:
+        - Generates a new code (invalidates old one)
+        - Resets attempt counter
+        - Logs `code_resent` event
+      operationId: resendCode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: john.doe@example.com
+      responses:
+        '200':
+          description: Code resent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Verification code resent
+                  expiresIn:
+                    type: number
+                    example: 600
+        '400':
+          description: No pending verification found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit or cooldown active
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitError'
+              examples:
+                cooldown:
+                  value:
+                    error: Please wait 25 seconds before resending
+                    code: COOLDOWN_ACTIVE
+                    retryAfter: 25
+                rateLimit:
+                  value:
+                    error: Maximum resend attempts reached. Try again in 45 minutes.
+                    code: RATE_LIMIT_EXCEEDED
+                    retryAfter: 2700
+
+  /api/guest/status:
+    get:
+      tags:
+        - Guest Auth
+      summary: Check device authorization status
+      description: |
+        Check if a MAC address is currently authorized.
+
+        Used by captive portal to skip verification for returning guests.
+      operationId: getGuestStatus
+      parameters:
+        - name: mac
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{12}$'
+          example: aabbccddeeff
+          description: MAC address (12 hex chars, no separators)
+      responses:
+        '200':
+          description: Status retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  authorized:
+                    type: boolean
+                    example: true
+                  expiresAt:
+                    type: string
+                    format: date-time
+                    example: "2026-01-26T10:30:00.000Z"
+                    nullable: true
+                  authorizedAt:
+                    type: string
+                    format: date-time
+                    example: "2026-01-19T10:30:00.000Z"
+                    nullable: true
+                  user:
+                    type: object
+                    nullable: true
+                    properties:
+                      name:
+                        type: string
+                        example: John Doe
+                      email:
+                        type: string
+                        example: john.doe@example.com
+        '400':
+          description: Invalid MAC address
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/portal/devices:
+    get:
+      tags:
+        - Guest Portal
+      summary: List user's authorized devices
+      description: |
+        Get all devices (MACs) authorized for the authenticated guest user.
+
+        **Auth**: Requires Better Auth session cookie (guest role)
+
+        **Enrichment**:
+        - Online status from Unifi
+        - Signal strength (RSSI) if online
+      operationId: listUserDevices
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Device list retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  devices:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GuestDevice'
+                  stats:
+                    type: object
+                    properties:
+                      total:
+                        type: number
+                        example: 5
+                      active:
+                        type: number
+                        example: 3
+                        description: Not expired
+                      online:
+                        type: number
+                        example: 2
+                        description: Currently connected
+                      expired:
+                        type: number
+                        example: 2
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/portal/devices/{id}:
+    patch:
+      tags:
+        - Guest Portal
+      summary: Update device nickname
+      description: |
+        Update the friendly name for a device.
+
+        **Auth**: Requires Better Auth session cookie (guest role)
+
+        **Authorization**: Device must belong to authenticated user
+      operationId: updateDeviceNickname
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 42
+          description: Guest device ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nickname:
+                  type: string
+                  maxLength: 50
+                  example: iPhone 15 Pro
+                  nullable: true
+      responses:
+        '200':
+          description: Device updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  device:
+                    $ref: '#/components/schemas/GuestDevice'
+        '401':
+          description: Not authenticated
+        '403':
+          description: Device does not belong to user
+        '404':
+          description: Device not found
+
+  /api/admin/guests:
+    get:
+      tags:
+        - Admin - Guests
+      summary: List all guest authorizations
+      description: |
+        Get paginated list of all guest authorizations with filtering.
+
+        **Auth**: Requires admin role + TOTP 2FA
+
+        **Enrichment**: Online status from Unifi active clients
+      operationId: listGuests
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+          example: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          example: 20
+        - name: search
+          in: query
+          schema:
+            type: string
+          example: john
+          description: Search by name, email, or MAC address
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [all, active, expired]
+            default: all
+          example: active
+      responses:
+        '200':
+          description: Guest list retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  guests:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AdminGuestRecord'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          description: Not authenticated
+        '403':
+          description: Requires admin role
+
+  /api/admin/guests/extend:
+    post:
+      tags:
+        - Admin - Guests
+      summary: Extend guest authorizations
+      description: |
+        Extend authorization expiry for one or more guests.
+
+        **Auth**: Requires admin role + TOTP 2FA
+
+        **Actions**:
+        1. Update Unifi authorization
+        2. Update database expiry
+        3. Log `admin_extend` event
+      operationId: extendGuests
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - guestIds
+              properties:
+                guestIds:
+                  type: array
+                  items:
+                    type: integer
+                  minItems: 1
+                  example: [1, 2, 3]
+                days:
+                  type: integer
+                  minimum: 1
+                  maximum: 30
+                  default: 7
+                  example: 7
+                  description: Number of days to extend
+      responses:
+        '200':
+          description: Extension operation completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  extended:
+                    type: number
+                    example: 2
+                    description: Number of successfully extended guests
+                  failed:
+                    type: number
+                    example: 1
+                    description: Number of failed extensions
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                    example:
+                      - "Failed to extend guest 3: Unifi authorization failed"
+        '400':
+          description: Invalid request
+        '401':
+          description: Not authenticated
+        '403':
+          description: Requires admin role
+
+  /api/admin/guests/revoke:
+    post:
+      tags:
+        - Admin - Guests
+      summary: Revoke guest authorizations
+      description: |
+        Revoke network access for one or more guests.
+
+        **Auth**: Requires admin role + TOTP 2FA
+
+        **Actions**:
+        1. Unauthorize + kick from Unifi
+        2. Set expiry to now in database
+        3. Log `admin_revoke` event
+      operationId: revokeGuests
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - guestIds
+              properties:
+                guestIds:
+                  type: array
+                  items:
+                    type: integer
+                  minItems: 1
+                  example: [1, 2, 3]
+      responses:
+        '200':
+          description: Revocation operation completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  revoked:
+                    type: number
+                    example: 2
+                  failed:
+                    type: number
+                    example: 1
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                    example:
+                      - "Failed to revoke guest 3: Unifi operation failed"
+        '400':
+          description: Invalid request
+        '401':
+          description: Not authenticated
+        '403':
+          description: Requires admin role
+
+  /api/admin/devices:
+    get:
+      tags:
+        - Admin - Network
+      summary: List all network devices
+      description: |
+        Get list of all devices (Unifi active clients + database guests).
+
+        **Auth**: Requires admin role + TOTP 2FA
+
+        **Fallback**: Returns database guests if Unifi unavailable
+      operationId: listDevices
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Device list retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  devices:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NetworkDevice'
+                  total:
+                    type: number
+                    example: 15
+        '401':
+          description: Not authenticated
+        '403':
+          description: Requires admin role
+
+  /api/admin/network/status:
+    get:
+      tags:
+        - Admin - Network
+      summary: Real-time network status
+      description: |
+        Get detailed real-time network status with Unifi client data.
+
+        **Auth**: Requires admin role + TOTP 2FA
+
+        **Enrichment**:
+        - Join Unifi clients with guest database
+        - RSSI, bandwidth, uptime from Unifi
+        - Authorization status from database
+
+        **Sorting**:
+        1. Authorized guests first
+        2. Signal strength descending
+      operationId: getNetworkStatus
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Network status retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  clients:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UnifiClient'
+                  stats:
+                    type: object
+                    properties:
+                      total:
+                        type: number
+                        example: 20
+                      guests:
+                        type: number
+                        example: 5
+                      wired:
+                        type: number
+                        example: 8
+                      wireless:
+                        type: number
+                        example: 12
+                      authorized:
+                        type: number
+                        example: 5
+                  unifiConnected:
+                    type: boolean
+                    example: true
+                  timestamp:
+                    type: string
+                    format: date-time
+        '401':
+          description: Not authenticated
+        '403':
+          description: Requires admin role
+
+  /api/admin/dpi:
+    get:
+      tags:
+        - Admin - Network
+      summary: Get DPI stats for device
+      description: |
+        Get Deep Packet Inspection statistics from Unifi for a specific MAC address.
+
+        **Auth**: Requires admin role + TOTP 2FA
+
+        **Data**:
+        - Bandwidth by application (top 20)
+        - Bandwidth by category
+        - Total RX/TX bytes (formatted)
+      operationId: getDPIStats
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: mac
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{12}$'
+          example: aabbccddeeff
+      responses:
+        '200':
+          description: DPI stats retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DPIStats'
+        '400':
+          description: Invalid MAC address
+        '401':
+          description: Not authenticated
+        '403':
+          description: Requires admin role
+
+  /api/admin/stats:
+    get:
+      tags:
+        - Admin - Activity
+      summary: Dashboard statistics
+      description: |
+        Get dashboard summary statistics.
+
+        **Auth**: Requires admin role + TOTP 2FA
+      operationId: getDashboardStats
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Statistics retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  activeGuests:
+                    type: number
+                    example: 12
+                    description: Not expired authorizations
+                  totalAuthorized:
+                    type: number
+                    example: 47
+                    description: All-time authorizations
+                  expiringToday:
+                    type: number
+                    example: 3
+                    description: Expiring in next 24 hours
+                  totalBandwidth:
+                    type: string
+                    example: "2.5 GB"
+                    description: Last 24 hours total bandwidth
+        '401':
+          description: Not authenticated
+        '403':
+          description: Requires admin role
+
+  /api/admin/activity:
+    get:
+      tags:
+        - Admin - Activity
+      summary: Activity log events
+      description: |
+        Get paginated activity log with filtering.
+
+        **Auth**: Requires admin role + TOTP 2FA
+
+        **Event Types**:
+        - `connect`: Guest device connected
+        - `disconnect`: Guest device disconnected
+        - `auth_success`: Successful verification
+        - `auth_fail`: Failed verification attempt
+        - `admin_revoke`: Admin revoked access
+        - `admin_extend`: Admin extended access
+        - `code_sent`: Verification code sent
+        - `code_resent`: Verification code resent
+        - `admin_login`: Admin logged in
+        - `admin_logout`: Admin logged out
+      operationId: getActivityLog
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [connect, disconnect, auth_success, auth_fail, admin_revoke, admin_extend, code_sent, code_resent, admin_login, admin_logout]
+          description: Filter by event type
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search by name, email, MAC, or IP
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Start of date range (ISO 8601)
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: End of date range (ISO 8601)
+      responses:
+        '200':
+          description: Activity log retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ActivityEvent'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          description: Not authenticated
+        '403':
+          description: Requires admin role
+
+  /api/admin/alerts:
+    get:
+      tags:
+        - Admin - Activity
+      summary: Dashboard alerts
+      description: |
+        Get current alerts for admin dashboard.
+
+        **Auth**: Requires admin role + TOTP 2FA
+
+        **Alert Types**:
+        - `expiring`: Guests expiring in 24 hours
+        - `failed_auth`: Failed auth attempts in last hour
+        - `new_guest`: New guests authorized today
+        - `high_bandwidth`: Devices exceeding bandwidth threshold
+      operationId: getAlerts
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Alerts retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  alerts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Alert'
+                  summary:
+                    type: object
+                    properties:
+                      total:
+                        type: number
+                        example: 5
+                      critical:
+                        type: number
+                        example: 1
+                      warning:
+                        type: number
+                        example: 3
+                      info:
+                        type: number
+                        example: 1
+        '401':
+          description: Not authenticated
+        '403':
+          description: Requires admin role
+
+  /api/health:
+    get:
+      tags:
+        - System
+      summary: Health check endpoint
+      description: |
+        Check health of all system components.
+
+        **No authentication required**
+
+        **Checks**:
+        - Database connectivity + latency
+        - Unifi Controller connectivity + latency
+        - Email service connectivity + latency
+
+        **Status Definitions**:
+        - `healthy`: All checks passed
+        - `degraded`: Some non-critical checks failed
+        - `unhealthy`: Critical checks failed
+      operationId: healthCheck
+      responses:
+        '200':
+          description: System is healthy or degraded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheck'
+              examples:
+                healthy:
+                  value:
+                    status: healthy
+                    timestamp: "2026-01-19T10:30:00.000Z"
+                    checks:
+                      database:
+                        status: pass
+                        latencyMs: 2
+                      unifi:
+                        status: pass
+                        latencyMs: 45
+                      email:
+                        status: pass
+                        latencyMs: 120
+                    version: "1.0.0"
+                degraded:
+                  value:
+                    status: degraded
+                    timestamp: "2026-01-19T10:30:00.000Z"
+                    checks:
+                      database:
+                        status: pass
+                        latencyMs: 3
+                      unifi:
+                        status: fail
+                        message: Connection timeout
+                      email:
+                        status: pass
+                        latencyMs: 110
+                    version: "1.0.0"
+        '503':
+          description: System is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheck'
+              example:
+                status: unhealthy
+                timestamp: "2026-01-19T10:30:00.000Z"
+                checks:
+                  database:
+                    status: fail
+                    message: Connection refused
+                  unifi:
+                    status: fail
+                    message: Unreachable
+                  email:
+                    status: pass
+                    latencyMs: 95
+                version: "1.0.0"
+
+  /api/metrics:
+    get:
+      tags:
+        - System
+      summary: System metrics (JSON)
+      description: |
+        Get comprehensive system metrics in JSON format.
+
+        **No authentication required**
+
+        Useful for custom monitoring dashboards or alerting systems.
+      operationId: getMetrics
+      responses:
+        '200':
+          description: Metrics retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Metrics'
+
+  /api/metrics/prometheus:
+    get:
+      tags:
+        - System
+      summary: Prometheus metrics (text format)
+      description: |
+        Get system metrics in Prometheus exposition format.
+
+        **No authentication required**
+
+        Configure Prometheus to scrape this endpoint.
+        Recommended scrape interval: 30s
+
+        **Metrics**:
+        - `captive_portal_guests_total`: Total guest authorizations (counter)
+        - `captive_portal_guests_active`: Active (not expired) guests (gauge)
+        - `captive_portal_guests_expired`: Expired guests (gauge)
+        - `captive_portal_guests_expiring_soon`: Expiring in 24h (gauge)
+        - `captive_portal_guests_unique_users`: Unique email addresses (gauge)
+        - `captive_portal_auth_success_total`: Successful auths (24h, counter)
+        - `captive_portal_auth_fail_total`: Failed auths (24h, counter)
+        - `captive_portal_verifications_pending`: Pending codes (gauge)
+        - `captive_portal_admins_total`: Total admin users (gauge)
+        - `captive_portal_revocations_24h`: Revocations in 24h (counter)
+        - `captive_portal_devices_total`: Total devices in DB (counter)
+        - `captive_portal_devices_active`: Active devices (gauge)
+      operationId: getPrometheusMetrics
+      responses:
+        '200':
+          description: Prometheus metrics text
+          content:
+            text/plain; version=0.0.4; charset=utf-8:
+              schema:
+                type: string
+              example: |
+                # HELP captive_portal_guests_total Total number of guest authorizations
+                # TYPE captive_portal_guests_total counter
+                captive_portal_guests_total 47
+
+                # HELP captive_portal_guests_active Number of active (not expired) guest authorizations
+                # TYPE captive_portal_guests_active gauge
+                captive_portal_guests_active 12
+
+                # HELP captive_portal_auth_success_total Successful authentication attempts in last 24 hours
+                # TYPE captive_portal_auth_success_total counter
+                captive_portal_auth_success_total 8
+
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: better-auth.session_token
+      description: Better Auth session cookie (HttpOnly, Secure)
+
+  schemas:
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          example: Something went wrong
+        code:
+          type: string
+          example: ERROR_CODE
+        details:
+          type: object
+          additionalProperties: true
+
+    RateLimitError:
+      allOf:
+        - $ref: '#/components/schemas/Error'
+        - type: object
+          properties:
+            retryAfter:
+              type: number
+              description: Seconds until rate limit resets
+              example: 3600
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 20
+        total:
+          type: integer
+          example: 47
+        totalPages:
+          type: integer
+          example: 3
+
+    GuestDevice:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 42
+        macAddress:
+          type: string
+          example: aa:bb:cc:dd:ee:ff
+        ipAddress:
+          type: string
+          nullable: true
+          example: 192.168.1.100
+        nickname:
+          type: string
+          nullable: true
+          example: iPhone 15 Pro
+        deviceInfo:
+          type: string
+          nullable: true
+          example: Apple iPhone
+        authorizedAt:
+          type: string
+          format: date-time
+          example: "2026-01-19T10:30:00.000Z"
+        expiresAt:
+          type: string
+          format: date-time
+          example: "2026-01-26T10:30:00.000Z"
+        lastSeen:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2026-01-19T12:45:00.000Z"
+        authCount:
+          type: integer
+          example: 3
+          description: Number of times this device has been authorized
+        isOnline:
+          type: boolean
+          example: true
+        isExpired:
+          type: boolean
+          example: false
+        signalStrength:
+          type: integer
+          nullable: true
+          example: -45
+          description: RSSI in dBm (if online and wireless)
+
+    AdminGuestRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 42
+        mac:
+          type: string
+          example: aa:bb:cc:dd:ee:ff
+        ip:
+          type: string
+          nullable: true
+          example: 192.168.1.100
+        device:
+          type: string
+          nullable: true
+          example: Apple iPhone
+        nickname:
+          type: string
+          nullable: true
+          example: John's iPhone
+        authorizedAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        lastSeen:
+          type: string
+          format: date-time
+          nullable: true
+        authCount:
+          type: integer
+          example: 2
+        isActive:
+          type: boolean
+          example: true
+          description: Not expired
+        isOnline:
+          type: boolean
+          example: true
+          description: Currently connected (from Unifi)
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+              example: cm4v8x9y0000008l2b3c4d5e6
+            name:
+              type: string
+              example: John Doe
+            email:
+              type: string
+              example: john.doe@example.com
+
+    NetworkDevice:
+      type: object
+      properties:
+        mac:
+          type: string
+          example: aa:bb:cc:dd:ee:ff
+        name:
+          type: string
+          nullable: true
+          example: John's iPhone
+        ip:
+          type: string
+          nullable: true
+          example: 192.168.1.100
+        signalStrength:
+          type: integer
+          nullable: true
+          example: -45
+          description: RSSI in dBm
+        lastSeen:
+          type: string
+          format: date-time
+          example: "2026-01-19T12:45:00.000Z"
+        authorized:
+          type: boolean
+          example: true
+
+    UnifiClient:
+      type: object
+      properties:
+        mac:
+          type: string
+          example: aa:bb:cc:dd:ee:ff
+        name:
+          type: string
+          nullable: true
+          example: iPhone-Pro
+        ip:
+          type: string
+          example: 192.168.1.100
+        hostname:
+          type: string
+          nullable: true
+          example: iphone-pro.local
+        signalStrength:
+          type: integer
+          nullable: true
+          example: -45
+          description: RSSI in dBm
+        rssi:
+          type: integer
+          nullable: true
+          example: -45
+        noise:
+          type: integer
+          nullable: true
+          example: -95
+        txRate:
+          type: number
+          nullable: true
+          example: 866
+          description: Mbps
+        rxRate:
+          type: number
+          nullable: true
+          example: 866
+        txBytes:
+          type: number
+          example: 1234567890
+        rxBytes:
+          type: number
+          example: 9876543210
+        uptime:
+          type: number
+          example: 3600
+          description: Seconds
+        lastSeen:
+          type: string
+          format: date-time
+        firstSeen:
+          type: string
+          format: date-time
+        isAuthorized:
+          type: boolean
+          example: true
+        isGuest:
+          type: boolean
+          example: true
+        isWired:
+          type: boolean
+          example: false
+        channel:
+          type: integer
+          nullable: true
+          example: 36
+        radio:
+          type: string
+          nullable: true
+          example: ng
+          enum: [ng, na, ad]
+          description: "ng: 2.4GHz, na: 5GHz, ad: 6GHz"
+        essid:
+          type: string
+          nullable: true
+          example: Guest WiFi
+        apMac:
+          type: string
+          nullable: true
+          example: ff:ee:dd:cc:bb:aa
+        guest:
+          type: object
+          nullable: true
+          description: Guest info if authorized in DB
+          properties:
+            userId:
+              type: string
+            userName:
+              type: string
+            userEmail:
+              type: string
+            expiresAt:
+              type: string
+              format: date-time
+            nickname:
+              type: string
+              nullable: true
+
+    DPIStats:
+      type: object
+      properties:
+        mac:
+          type: string
+          example: aa:bb:cc:dd:ee:ff
+        categories:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                example: 4
+              name:
+                type: string
+                example: Video Streaming
+              rxBytes:
+                type: number
+                example: 1234567890
+              txBytes:
+                type: number
+                example: 123456789
+              rxFormatted:
+                type: string
+                example: "1.15 GB"
+              txFormatted:
+                type: string
+                example: "117.74 MB"
+              totalBytes:
+                type: number
+                example: 1358024679
+              totalFormatted:
+                type: string
+                example: "1.26 GB"
+        applications:
+          type: array
+          description: Top 20 applications by bandwidth
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                example: 5000
+              categoryId:
+                type: integer
+                example: 4
+              categoryName:
+                type: string
+                example: Video Streaming
+              rxBytes:
+                type: number
+              txBytes:
+                type: number
+              rxFormatted:
+                type: string
+              txFormatted:
+                type: string
+              totalBytes:
+                type: number
+              totalFormatted:
+                type: string
+        totalRx:
+          type: string
+          example: "5.2 GB"
+        totalTx:
+          type: string
+          example: "1.8 GB"
+        totalRxBytes:
+          type: number
+          example: 5581619200
+        totalTxBytes:
+          type: number
+          example: 1932735283
+        available:
+          type: boolean
+          example: true
+          description: Whether DPI stats are available for this device
+
+    ActivityEvent:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 123
+        type:
+          type: string
+          enum: [connect, disconnect, auth_success, auth_fail, admin_revoke, admin_extend, code_sent, code_resent, admin_login, admin_logout]
+          example: auth_success
+        description:
+          type: string
+          example: John Doe successfully authenticated
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-01-19T10:30:00.000Z"
+        user:
+          type: string
+          nullable: true
+          example: John Doe
+        userEmail:
+          type: string
+          nullable: true
+          example: john.doe@example.com
+        mac:
+          type: string
+          nullable: true
+          example: aa:bb:cc:dd:ee:ff
+        ip:
+          type: string
+          nullable: true
+          example: 192.168.1.100
+        details:
+          type: object
+          nullable: true
+          additionalProperties: true
+          description: Parsed JSON details object
+
+    Alert:
+      type: object
+      properties:
+        id:
+          type: string
+          example: expiring-42
+        type:
+          type: string
+          enum: [expiring, failed_auth, new_guest, high_bandwidth]
+          example: expiring
+        severity:
+          type: string
+          enum: [info, warning, critical]
+          example: warning
+        title:
+          type: string
+          example: Guest Expiring Soon
+        message:
+          type: string
+          example: John Doe's access expires in 4 hours
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-01-19T10:30:00.000Z"
+        link:
+          type: string
+          nullable: true
+          example: /admin/guests?search=john.doe@example.com
+
+    HealthCheck:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+          example: healthy
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-01-19T10:30:00.000Z"
+        checks:
+          type: object
+          properties:
+            database:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [pass, fail]
+                  example: pass
+                latencyMs:
+                  type: number
+                  nullable: true
+                  example: 2
+                message:
+                  type: string
+                  nullable: true
+                  example: Connection refused
+            unifi:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [pass, fail]
+                message:
+                  type: string
+                  nullable: true
+                latencyMs:
+                  type: number
+                  nullable: true
+            email:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [pass, fail]
+                message:
+                  type: string
+                  nullable: true
+                latencyMs:
+                  type: number
+                  nullable: true
+        version:
+          type: string
+          example: "1.0.0"
+
+    Metrics:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-01-19T10:30:00.000Z"
+        guests:
+          type: object
+          properties:
+            total:
+              type: number
+              example: 47
+              description: All-time authorizations
+            activeAuthorizations:
+              type: number
+              example: 12
+              description: Not expired
+            expiredAuthorizations:
+              type: number
+              example: 35
+            expiringSoon:
+              type: number
+              example: 3
+              description: Expiring in next 24 hours
+            uniqueUsers:
+              type: number
+              example: 28
+              description: Unique email addresses
+        authentication:
+          type: object
+          properties:
+            successfulAuths:
+              type: number
+              example: 8
+              description: Last 24 hours
+            failedAuths:
+              type: number
+              example: 2
+              description: Last 24 hours
+            pendingVerifications:
+              type: number
+              example: 3
+              description: Active verification codes
+        admin:
+          type: object
+          properties:
+            totalAdmins:
+              type: number
+              example: 2
+            revocationsLast24h:
+              type: number
+              example: 1
+        devices:
+          type: object
+          properties:
+            totalDevices:
+              type: number
+              example: 47
+            activeDevices:
+              type: number
+              example: 12
+              description: Currently authorized
