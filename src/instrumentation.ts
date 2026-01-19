@@ -12,6 +12,13 @@
  * - Expiry reminders: every 5 minutes (but only sends every 12 hours)
  */
 
+import {
+  CONNECTION_SYNC_INTERVAL_MS,
+  DPI_CACHE_INTERVAL_MS,
+  AUTH_SYNC_INTERVAL_MS,
+  CLEANUP_INTERVAL_MS,
+} from './lib/constants/jobs'
+
 /**
  * Validate production secrets and configuration on startup
  */
@@ -118,56 +125,41 @@ export async function register() {
     structuredLogger.info('Starting background job scheduler')
 
     // Connection sync every 1 minute
-    setInterval(
-      () => {
-        runConnectionSync().catch((err) =>
-          structuredLogger.error('Connection sync job failed', err, { job: 'connection-sync' })
-        )
-      },
-      1 * 60 * 1000
-    )
+    setInterval(() => {
+      runConnectionSync().catch((err) =>
+        structuredLogger.error('Connection sync job failed', err, { job: 'connection-sync' })
+      )
+    }, CONNECTION_SYNC_INTERVAL_MS)
 
     // DPI cache every 5 minutes
-    setInterval(
-      () => {
-        runDPICache().catch((err) =>
-          structuredLogger.error('DPI cache job failed', err, { job: 'dpi-cache' })
-        )
-      },
-      5 * 60 * 1000
-    )
+    setInterval(() => {
+      runDPICache().catch((err) =>
+        structuredLogger.error('DPI cache job failed', err, { job: 'dpi-cache' })
+      )
+    }, DPI_CACHE_INTERVAL_MS)
 
     // Authorization sync every 5 minutes
-    setInterval(
-      () => {
-        runAuthorizationSync().catch((err) =>
-          structuredLogger.error('Authorization sync job failed', err, {
-            job: 'authorization-sync',
-          })
-        )
-      },
-      5 * 60 * 1000
-    )
+    setInterval(() => {
+      runAuthorizationSync().catch((err) =>
+        structuredLogger.error('Authorization sync job failed', err, {
+          job: 'authorization-sync',
+        })
+      )
+    }, AUTH_SYNC_INTERVAL_MS)
 
     // Cleanup jobs every 5 minutes
-    setInterval(
-      () => {
-        runCleanupJobs().catch((err) =>
-          structuredLogger.error('Cleanup job failed', err, { job: 'cleanup' })
-        )
-      },
-      5 * 60 * 1000
-    )
+    setInterval(() => {
+      runCleanupJobs().catch((err) =>
+        structuredLogger.error('Cleanup job failed', err, { job: 'cleanup' })
+      )
+    }, CLEANUP_INTERVAL_MS)
 
     // Expiry reminders every 5 minutes (internally throttled to 12 hours)
-    setInterval(
-      () => {
-        runExpiryReminders().catch((err) =>
-          structuredLogger.error('Expiry reminder job failed', err, { job: 'expiry-reminders' })
-        )
-      },
-      5 * 60 * 1000
-    )
+    setInterval(() => {
+      runExpiryReminders().catch((err) =>
+        structuredLogger.error('Expiry reminder job failed', err, { job: 'expiry-reminders' })
+      )
+    }, CLEANUP_INTERVAL_MS)
 
     // Run initial sync after a short delay (let the server fully start)
     setTimeout(() => {

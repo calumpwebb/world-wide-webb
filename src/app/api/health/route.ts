@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { db, users } from '@/lib/db'
 import { sql } from 'drizzle-orm'
+import { UNIFI_HEALTH_CHECK_TIMEOUT_MS, MAILPIT_HEALTH_CHECK_TIMEOUT_MS } from '@/lib/constants'
 
 interface HealthCheck {
   status: 'healthy' | 'degraded' | 'unhealthy'
@@ -57,7 +58,7 @@ async function checkUnifi(): Promise<CheckResult> {
     // Just check if the controller is reachable (don't fully authenticate)
     const response = await fetch(controllerUrl, {
       method: 'HEAD',
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(UNIFI_HEALTH_CHECK_TIMEOUT_MS),
       // Skip SSL verification for self-signed certs
       // @ts-expect-error - Node.js specific fetch option
       rejectUnauthorized: process.env.UNIFI_SKIP_SSL_VERIFY !== 'true',
@@ -117,7 +118,7 @@ async function checkEmail(): Promise<CheckResult> {
     // Quick TCP check to SMTP port
     const response = await fetch(`http://${smtpHost}:8025/api/v1/info`, {
       method: 'GET',
-      signal: AbortSignal.timeout(3000),
+      signal: AbortSignal.timeout(MAILPIT_HEALTH_CHECK_TIMEOUT_MS),
     }).catch(() => null)
 
     const latencyMs = Date.now() - start

@@ -2,6 +2,13 @@ import { NextResponse } from 'next/server'
 import { db, guests, users, activityLogs } from '@/lib/db'
 import { gt, and, lt, eq, desc, sql } from 'drizzle-orm'
 import { requireAdmin, AdminAuthError } from '@/lib/session'
+import {
+  ONE_DAY_MS,
+  ONE_HOUR_MS,
+  ALERT_SEVERITY_THRESHOLD,
+  FAILED_AUTH_ALERT_THRESHOLD,
+  CRITICAL_FAILED_AUTH_THRESHOLD,
+} from '@/lib/constants'
 
 export interface Alert {
   id: string
@@ -17,8 +24,8 @@ export async function GET() {
   try {
     await requireAdmin()
     const now = new Date()
-    const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000)
-    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000)
+    const twentyFourHoursFromNow = new Date(now.getTime() + ONE_DAY_MS)
+    const oneHourAgo = new Date(now.getTime() - ONE_HOUR_MS)
 
     const alerts: Alert[] = []
 
@@ -40,7 +47,7 @@ export async function GET() {
       alerts.push({
         id: 'expiring-guests',
         type: 'expiring',
-        severity: expiringGuests.length >= 5 ? 'warning' : 'info',
+        severity: expiringGuests.length >= ALERT_SEVERITY_THRESHOLD ? 'warning' : 'info',
         title: 'Guests Expiring Soon',
         message: `${expiringGuests.length} guest${expiringGuests.length > 1 ? 's' : ''} will expire within 24 hours`,
         timestamp: now,
@@ -56,11 +63,11 @@ export async function GET() {
       .get()
 
     const failedCount = failedAuths?.count || 0
-    if (failedCount >= 3) {
+    if (failedCount >= FAILED_AUTH_ALERT_THRESHOLD) {
       alerts.push({
         id: 'failed-auths',
         type: 'failed_auth',
-        severity: failedCount >= 10 ? 'critical' : 'warning',
+        severity: failedCount >= CRITICAL_FAILED_AUTH_THRESHOLD ? 'critical' : 'warning',
         title: 'Failed Auth Attempts',
         message: `${failedCount} failed authentication attempts in the last hour`,
         timestamp: now,

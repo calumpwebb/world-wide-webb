@@ -1,5 +1,14 @@
 import { db, rateLimits } from '@/lib/db'
 import { eq, and } from 'drizzle-orm'
+import {
+  ONE_HOUR_MS,
+  FIFTEEN_MINUTES_MS,
+  THIRTY_MINUTES_MS,
+  VERIFY_EMAIL_MAX_ATTEMPTS_DEFAULT,
+  RESEND_CODE_MAX_ATTEMPTS_DEFAULT,
+  LOGIN_MAX_ATTEMPTS_DEFAULT,
+  ADMIN_LOGIN_MAX_ATTEMPTS_DEFAULT,
+} from './constants'
 
 export type RateLimitAction = 'verify' | 'resend' | 'login' | 'admin_login'
 
@@ -18,22 +27,30 @@ interface RateLimitResult {
 
 const DEFAULT_CONFIGS: Record<RateLimitAction, RateLimitConfig> = {
   verify: {
-    maxAttempts: parseInt(process.env.RATE_LIMIT_VERIFY_EMAIL || '5'),
-    windowMs: 60 * 60 * 1000, // 1 hour
+    maxAttempts: parseInt(
+      process.env.RATE_LIMIT_VERIFY_EMAIL || String(VERIFY_EMAIL_MAX_ATTEMPTS_DEFAULT)
+    ),
+    windowMs: ONE_HOUR_MS,
   },
   resend: {
-    maxAttempts: parseInt(process.env.MAX_RESENDS_PER_HOUR || '3'),
-    windowMs: 60 * 60 * 1000, // 1 hour
+    maxAttempts: parseInt(
+      process.env.MAX_RESENDS_PER_HOUR || String(RESEND_CODE_MAX_ATTEMPTS_DEFAULT)
+    ),
+    windowMs: ONE_HOUR_MS,
   },
   login: {
-    maxAttempts: parseInt(process.env.RATE_LIMIT_LOGIN_ATTEMPTS || '5'),
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    lockoutMs: 15 * 60 * 1000, // 15 minute lockout
+    maxAttempts: parseInt(
+      process.env.RATE_LIMIT_LOGIN_ATTEMPTS || String(LOGIN_MAX_ATTEMPTS_DEFAULT)
+    ),
+    windowMs: FIFTEEN_MINUTES_MS,
+    lockoutMs: FIFTEEN_MINUTES_MS,
   },
   admin_login: {
-    maxAttempts: parseInt(process.env.RATE_LIMIT_ADMIN_LOGIN_ATTEMPTS || '5'),
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    lockoutMs: 30 * 60 * 1000, // 30 minute lockout
+    maxAttempts: parseInt(
+      process.env.RATE_LIMIT_ADMIN_LOGIN_ATTEMPTS || String(ADMIN_LOGIN_MAX_ATTEMPTS_DEFAULT)
+    ),
+    windowMs: FIFTEEN_MINUTES_MS,
+    lockoutMs: THIRTY_MINUTES_MS,
   },
 }
 

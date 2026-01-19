@@ -5,13 +5,14 @@ import { unifi } from '@/lib/unifi'
 import { eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import { requireAdmin, AdminAuthError } from '@/lib/session'
+import { ONE_DAY_MS, MAX_GUEST_EXTEND_DAYS, GUEST_AUTH_DEFAULT_DAYS } from '@/lib/constants'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
 
 const extendSchema = z.object({
   guestIds: z.array(z.number()).min(1, 'At least one guest ID required'),
-  days: z.number().min(1).max(30).default(7), // Extend by 1-30 days (default 7)
+  days: z.number().min(1).max(MAX_GUEST_EXTEND_DAYS).default(GUEST_AUTH_DEFAULT_DAYS), // Extend by 1-30 days (default 7)
 })
 
 export async function POST(request: NextRequest) {
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
       try {
         // Calculate new expiry - extend from current expiry or now, whichever is later
         const baseDate = guest.expiresAt > new Date() ? guest.expiresAt : new Date()
-        const newExpiresAt = new Date(baseDate.getTime() + days * 24 * 60 * 60 * 1000)
+        const newExpiresAt = new Date(baseDate.getTime() + days * ONE_DAY_MS)
 
         // Authorize on Unifi with the new duration
         if (guest.macAddress) {

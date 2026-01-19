@@ -1,13 +1,14 @@
 import nodemailer from 'nodemailer'
 import { Resend } from 'resend'
 import { escapeHtml } from './utils'
+import { SMTP_DEFAULT_PORT } from './constants'
 
 const provider = process.env.EMAIL_PROVIDER || 'mailpit'
 
 // Mailpit transporter (development)
 const mailpitTransport = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'localhost',
-  port: parseInt(process.env.SMTP_PORT || '1025'),
+  port: parseInt(process.env.SMTP_PORT || String(SMTP_DEFAULT_PORT)),
   secure: process.env.SMTP_SECURE === 'true',
   auth:
     process.env.SMTP_USER && process.env.SMTP_PASS

@@ -5,6 +5,11 @@ import { sendVerificationEmail, generateVerificationCode } from '@/lib/email'
 import { logger } from '@/lib/logger'
 import { eq, and } from 'drizzle-orm'
 import { sanitizeName, isValidMac } from '@/lib/utils'
+import {
+  VERIFY_EMAIL_MAX_ATTEMPTS_DEFAULT,
+  VERIFICATION_CODE_EXPIRY_MINUTES,
+  ONE_HOUR_MS,
+} from '@/lib/constants'
 
 const requestSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -12,8 +17,12 @@ const requestSchema = z.object({
   macAddress: z.string().optional(),
 })
 
-const RATE_LIMIT = parseInt(process.env.RATE_LIMIT_VERIFY_EMAIL || '5')
-const CODE_EXPIRY_MINUTES = parseInt(process.env.VERIFICATION_CODE_EXPIRY_MINUTES || '10')
+const RATE_LIMIT = parseInt(
+  process.env.RATE_LIMIT_VERIFY_EMAIL || String(VERIFY_EMAIL_MAX_ATTEMPTS_DEFAULT)
+)
+const CODE_EXPIRY_MINUTES = parseInt(
+  process.env.VERIFICATION_CODE_EXPIRY_MINUTES || String(VERIFICATION_CODE_EXPIRY_MINUTES)
+)
 
 export async function POST(request: NextRequest) {
   try {
@@ -45,7 +54,7 @@ export async function POST(request: NextRequest) {
 
     // Check rate limit
     const now = new Date()
-    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000)
+    const oneHourAgo = new Date(now.getTime() - ONE_HOUR_MS)
 
     const existingLimit = await db
       .select()

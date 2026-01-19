@@ -12,8 +12,10 @@
 
 import https from 'https'
 import { normalizeMac } from './utils'
+import { UNIFI_DEFAULT_PORT, GUEST_AUTH_DURATION_MINUTES } from './constants'
 
-const CONTROLLER_URL = process.env.UNIFI_CONTROLLER_URL || 'https://192.168.1.1:8443'
+const CONTROLLER_URL =
+  process.env.UNIFI_CONTROLLER_URL || `https://192.168.1.1:${UNIFI_DEFAULT_PORT}`
 const USERNAME = process.env.UNIFI_USERNAME || 'admin'
 const PASSWORD = process.env.UNIFI_PASSWORD || ''
 const SITE = process.env.UNIFI_SITE || 'default'
@@ -176,7 +178,10 @@ class UnifiController {
    * @param mac - MAC address to authorize
    * @param minutes - Duration in minutes (default 7 days)
    */
-  async authorizeGuest(mac: string, minutes: number = 60 * 24 * 7): Promise<boolean> {
+  async authorizeGuest(
+    mac: string,
+    minutes: number = GUEST_AUTH_DURATION_MINUTES
+  ): Promise<boolean> {
     const normalizedMac = normalizeMac(mac)
 
     const result = await this.request<{ meta: { rc: string } }>(

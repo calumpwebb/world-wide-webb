@@ -4,14 +4,26 @@ import { sendVerificationEmail, generateVerificationCode } from '@/lib/email'
 import { logger } from '@/lib/logger'
 import { eq, and, gt } from 'drizzle-orm'
 import { z } from 'zod'
+import {
+  RESEND_CODE_COOLDOWN_SECONDS_DEFAULT,
+  RESEND_CODE_MAX_ATTEMPTS_DEFAULT,
+  VERIFICATION_CODE_EXPIRY_MINUTES,
+  ONE_SECOND_MS,
+} from '@/lib/constants'
 
 const requestSchema = z.object({
   email: z.string().email('Invalid email address'),
 })
 
-const RESEND_COOLDOWN = parseInt(process.env.RATE_LIMIT_RESEND_COOLDOWN || '30') * 1000
-const MAX_RESENDS_PER_HOUR = parseInt(process.env.MAX_RESENDS_PER_HOUR || '3')
-const CODE_EXPIRY_MINUTES = parseInt(process.env.VERIFICATION_CODE_EXPIRY_MINUTES || '10')
+const RESEND_COOLDOWN =
+  parseInt(process.env.RATE_LIMIT_RESEND_COOLDOWN || String(RESEND_CODE_COOLDOWN_SECONDS_DEFAULT)) *
+  ONE_SECOND_MS
+const MAX_RESENDS_PER_HOUR = parseInt(
+  process.env.MAX_RESENDS_PER_HOUR || String(RESEND_CODE_MAX_ATTEMPTS_DEFAULT)
+)
+const CODE_EXPIRY_MINUTES = parseInt(
+  process.env.VERIFICATION_CODE_EXPIRY_MINUTES || String(VERIFICATION_CODE_EXPIRY_MINUTES)
+)
 
 export async function POST(request: NextRequest) {
   try {

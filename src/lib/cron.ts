@@ -13,6 +13,12 @@ import { sendExpiryReminder } from '@/lib/email'
 import { logger } from '@/lib/logger'
 import { unifi } from '@/lib/unifi'
 import { eq, lt, gt, and, lte, inArray } from 'drizzle-orm'
+import {
+  ONE_DAY_MS,
+  THIRTY_DAYS_MS,
+  EXPIRY_REMINDER_INTERVAL_MS,
+  DPI_TOP_APPS_LIMIT,
+} from './constants'
 
 // Track last seen MACs for connection event detection
 let lastSeenMacs = new Set<string>()
@@ -154,9 +160,9 @@ export async function cacheDPIStats(): Promise<SyncResult> {
         }
       }
 
-      // Collect top applications by bandwidth (limited to top 10)
+      // Collect top applications by bandwidth (limited to top N)
       if (dpiStats?.by_app) {
-        topApps.push(...dpiStats.by_app.slice(0, 10))
+        topApps.push(...dpiStats.by_app.slice(0, DPI_TOP_APPS_LIMIT))
       }
 
       // Use client's byte counts if DPI stats aren't available
@@ -373,11 +379,11 @@ export async function cleanupExpiredSessions(): Promise<SyncResult> {
 }
 
 /**
- * Cleanup old network stats (keep last 30 days)
+ * Cleanup old network stats (keep last N days)
  */
 export async function cleanupOldStats(): Promise<SyncResult> {
   try {
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+    const thirtyDaysAgo = new Date(Date.now() - THIRTY_DAYS_MS)
 
     const result = db.delete(networkStats).where(lt(networkStats.timestamp, thirtyDaysAgo)).run()
 
@@ -397,7 +403,6 @@ export async function cleanupOldStats(): Promise<SyncResult> {
 
 // Track when we last sent expiry reminders (to avoid duplicate emails)
 let lastExpiryReminderTime = 0
-const EXPIRY_REMINDER_INTERVAL = 12 * 60 * 60 * 1000 // 12 hours
 
 /**
  * Send expiry reminder emails for guests expiring within 24 hours
@@ -408,7 +413,7 @@ export async function sendExpiryReminders(): Promise<SyncResult> {
     const now = Date.now()
 
     // Skip if we sent reminders recently
-    if (lastExpiryReminderTime > 0 && now - lastExpiryReminderTime < EXPIRY_REMINDER_INTERVAL) {
+    if (lastExpiryReminderTime > 0 && now - lastExpiryReminderTime < EXPIRY_REMINDER_INTERVAL_MS) {
       return {
         success: true,
         message: 'Skipped - reminders sent recently',
@@ -417,7 +422,7 @@ export async function sendExpiryReminders(): Promise<SyncResult> {
     }
 
     const currentDate = new Date()
-    const twentyFourHoursFromNow = new Date(now + 24 * 60 * 60 * 1000)
+    const twentyFourHoursFromNow = new Date(now + ONE_DAY_MS)
 
     // Find guests expiring in the next 24 hours (but not yet expired)
     const expiringGuests = db

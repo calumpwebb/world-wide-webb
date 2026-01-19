@@ -6,13 +6,16 @@ import { unifi } from '@/lib/unifi'
 import { eq, and, gt } from 'drizzle-orm'
 import { z } from 'zod'
 import { randomUUID, timingSafeEqual } from 'crypto'
+import { ONE_DAY_MS, CODE_VERIFICATION_MAX_ATTEMPTS_DEFAULT } from '@/lib/constants'
 
 const requestSchema = z.object({
   email: z.string().email('Invalid email address'),
   code: z.string().length(6, 'Code must be 6 digits').regex(/^\d+$/, 'Code must be numeric'),
 })
 
-const MAX_ATTEMPTS = parseInt(process.env.RATE_LIMIT_CODE_ATTEMPTS || '3')
+const MAX_ATTEMPTS = parseInt(
+  process.env.RATE_LIMIT_CODE_ATTEMPTS || String(CODE_VERIFICATION_MAX_ATTEMPTS_DEFAULT)
+)
 const GUEST_AUTH_DAYS = parseInt(process.env.GUEST_AUTH_DURATION_DAYS || '7')
 const ALLOW_OFFLINE_AUTH = process.env.ALLOW_OFFLINE_AUTH === 'true'
 
@@ -151,7 +154,7 @@ export async function POST(request: NextRequest) {
 
     // Calculate expiration
     const now = new Date()
-    const expiresAt = new Date(now.getTime() + GUEST_AUTH_DAYS * 24 * 60 * 60 * 1000)
+    const expiresAt = new Date(now.getTime() + GUEST_AUTH_DAYS * ONE_DAY_MS)
     const macAddress = verification.macAddress || ''
     const ipAddress =
       request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined

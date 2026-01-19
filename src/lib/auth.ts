@@ -4,6 +4,15 @@ import { twoFactor } from 'better-auth/plugins/two-factor'
 import { db } from './db'
 import * as schema from './db/schema'
 import bcrypt from 'bcryptjs'
+import {
+  BCRYPT_SALT_ROUNDS,
+  TOTP_PERIOD_SECONDS,
+  BACKUP_CODES_AMOUNT,
+  BACKUP_CODE_LENGTH,
+  VERIFICATION_CODE_LENGTH,
+  SEVEN_DAYS_MS,
+  ONE_DAY_MS,
+} from './constants'
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -24,7 +33,7 @@ export const auth = betterAuth({
     requireEmailVerification: false, // Admin is pre-verified
     password: {
       hash: async (password: string) => {
-        const salt = await bcrypt.genSalt(10)
+        const salt = await bcrypt.genSalt(BCRYPT_SALT_ROUNDS)
         return bcrypt.hash(password, salt)
       },
       verify: async ({ hash, password }: { hash: string; password: string }) => {
@@ -38,20 +47,20 @@ export const auth = betterAuth({
     twoFactor({
       issuer: 'World Wide Webb',
       otpOptions: {
-        period: 30,
-        digits: 6,
+        period: TOTP_PERIOD_SECONDS,
+        digits: VERIFICATION_CODE_LENGTH,
       },
       backupCodeOptions: {
-        amount: 10, // Generate 10 backup codes
-        length: 10, // 10 characters each
+        amount: BACKUP_CODES_AMOUNT,
+        length: BACKUP_CODE_LENGTH,
       },
     }),
   ],
 
   // Session config
   session: {
-    expiresIn: 60 * 60 * 24 * 7, // 7 days
-    updateAge: 60 * 60 * 24, // Update every 24 hours
+    expiresIn: SEVEN_DAYS_MS / 1000, // 7 days (in seconds for Better Auth)
+    updateAge: ONE_DAY_MS / 1000, // Update every 24 hours (in seconds)
   },
 
   // Secret for session encryption

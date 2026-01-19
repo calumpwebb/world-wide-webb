@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { db, users, guests, activityLogs, verificationCodes } from '@/lib/db'
 import { sql, eq, gt, and, gte, lte, count } from 'drizzle-orm'
+import { ONE_DAY_MS } from '@/lib/constants'
 
 interface Metrics {
   timestamp: string
@@ -29,7 +30,7 @@ interface Metrics {
 export async function GET() {
   try {
     const now = new Date()
-    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+    const twentyFourHoursAgo = new Date(now.getTime() - ONE_DAY_MS)
 
     // Guest metrics
     const totalAuthorizations =
@@ -48,7 +49,7 @@ export async function GET() {
     const expiredAuthorizations = totalAuthorizations - activeAuthorizations
 
     // Expiring soon = expires within next 24 hours (still active but close to expiry)
-    const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+    const twentyFourHoursFromNow = new Date(now.getTime() + ONE_DAY_MS)
     const expiringSoon =
       db
         .select({ count: sql<number>`count(*)` })

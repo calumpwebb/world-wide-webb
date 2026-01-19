@@ -183,9 +183,9 @@
 
 ### 🔵 P3 - Low Priority (Future Enhancements)
 
-- [x] **Code Cleanup** - ✅ **PARTIALLY COMPLETED (2026-01-19)** - Deprecated code removed
+- [x] **Code Cleanup** - ✅ **COMPLETED (2026-01-19)** - Deprecated code removed, magic numbers refactored
   - [x] Remove deprecated normalizeMac wrapper in src/lib/unifi.ts (replaced all calls with direct imports)
-  - [ ] Replace magic numbers with named constants (e.g., 600000 → CODE_EXPIRY_MS)
+  - [x] Replace magic numbers with named constants (e.g., 600000 → CODE_EXPIRY_MS)
   - [ ] Add JSDoc comments to complex functions
   - [ ] Extract hardcoded values to configuration
 
@@ -218,7 +218,22 @@
 ## Notes
 
 ### Recent Enhancements (2026-01-19 PM)
-- **API Documentation Suite** (Latest - 2026-01-19): Comprehensive API reference for developers
+- **Magic Numbers Refactoring** (Latest - 2026-01-19): Replaced 45+ magic numbers with named constants
+  - Created centralized constants directory (src/lib/constants/) with 6 organized files:
+    - `time.ts`: Time duration constants (ONE_DAY_MS, ONE_HOUR_MS, FIFTEEN_MINUTES_MS, etc.)
+    - `auth.ts`: Authentication constants (BCRYPT_SALT_ROUNDS, TOTP_PERIOD_SECONDS, BACKUP_CODES_AMOUNT, etc.)
+    - `rate-limits.ts`: Rate limiting defaults (VERIFY_EMAIL_MAX_ATTEMPTS_DEFAULT, RESEND_CODE_MAX_ATTEMPTS_DEFAULT, etc.)
+    - `alerts.ts`: Alert thresholds (ALERT_SEVERITY_THRESHOLD, FAILED_AUTH_ALERT_THRESHOLD, etc.)
+    - `jobs.ts`: Background job intervals (CONNECTION_SYNC_INTERVAL_MS, DPI_CACHE_INTERVAL_MS, etc.)
+    - `config.ts`: Server configuration (UNIFI_DEFAULT_PORT, SMTP_DEFAULT_PORT, health check timeouts)
+  - Updated 15+ files across codebase to use constants instead of hardcoded values:
+    - Core libraries: auth.ts, rate-limit.ts, unifi.ts, email.ts, cron.ts
+    - API routes: verify-email, verify-code, resend-code, alerts, stats, extend, metrics, prometheus, health
+    - Background jobs: instrumentation.ts
+  - Eliminated 27 instances of duplicated `24 * 60 * 60 * 1000` (ONE_DAY_MS)
+  - All 39 unit tests passing, TypeScript compilation successful
+  - Benefits: Better maintainability, single source of truth, easier configuration changes
+- **API Documentation Suite** (2026-01-19): Comprehensive API reference for developers
   - Created OpenAPI 3.0 specification (docs/API.yaml) with all 19 endpoints fully documented
   - Created human-readable API documentation (docs/API.md) with request/response examples, authentication flows, and integration examples (TypeScript, Python, curl)
   - Created error code reference (docs/ERROR_CODES.md) with recovery actions, retry strategies, and monitoring best practices

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { db, guests, networkStats } from '@/lib/db'
 import { gt, and, lt, sql } from 'drizzle-orm'
 import { requireAdmin, AdminAuthError } from '@/lib/session'
+import { ONE_DAY_MS } from '@/lib/constants'
 
 export async function GET() {
   try {
@@ -9,8 +10,8 @@ export async function GET() {
     await requireAdmin()
     const now = new Date()
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000)
-    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+    const todayEnd = new Date(todayStart.getTime() + ONE_DAY_MS)
+    const yesterday = new Date(now.getTime() - ONE_DAY_MS)
 
     // Count active guests (not expired)
     const activeGuestsResult = db
