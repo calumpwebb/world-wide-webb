@@ -11,12 +11,103 @@
  * - Expiry reminders: every 5 minutes (but only sends every 12 hours)
  */
 
+/**
+ * Validate production secrets and configuration on startup
+ */
+function validateSecrets() {
+  const { NODE_ENV, BETTER_AUTH_SECRET, ADMIN_PASSWORD } = process.env
+  const isProduction = NODE_ENV === 'production'
+  const warnings: string[] = []
+  const errors: string[] = []
+
+  // Check BETTER_AUTH_SECRET
+  if (!BETTER_AUTH_SECRET) {
+    errors.push('BETTER_AUTH_SECRET is not set. Session encryption will fail.')
+  } else if (BETTER_AUTH_SECRET.length < 32) {
+    errors.push(
+      'BETTER_AUTH_SECRET is too short (minimum 32 characters). Generate a strong secret with: openssl rand -base64 32'
+    )
+  } else if (
+    isProduction &&
+    (BETTER_AUTH_SECRET === 'change-this-secret-in-production' ||
+      BETTER_AUTH_SECRET === 'your-secret-key-here' ||
+      BETTER_AUTH_SECRET.includes('example') ||
+      BETTER_AUTH_SECRET.includes('test'))
+  ) {
+    errors.push(
+      'BETTER_AUTH_SECRET appears to be a default value. Generate a production secret with: openssl rand -base64 32'
+    )
+  }
+
+  // Check ADMIN_PASSWORD in production
+  if (isProduction && ADMIN_PASSWORD) {
+    if (ADMIN_PASSWORD.length < 12) {
+      warnings.push(
+        'ADMIN_PASSWORD should be at least 12 characters in production for better security.'
+      )
+    }
+    if (!/[A-Z]/.test(ADMIN_PASSWORD)) {
+      warnings.push('ADMIN_PASSWORD should contain at least one uppercase letter.')
+    }
+    if (!/[a-z]/.test(ADMIN_PASSWORD)) {
+      warnings.push('ADMIN_PASSWORD should contain at least one lowercase letter.')
+    }
+    if (!/[0-9]/.test(ADMIN_PASSWORD)) {
+      warnings.push('ADMIN_PASSWORD should contain at least one number.')
+    }
+    if (!/[^A-Za-z0-9]/.test(ADMIN_PASSWORD)) {
+      warnings.push('ADMIN_PASSWORD should contain at least one special character.')
+    }
+  }
+
+  // Check Unifi Controller configuration
+  if (!process.env.UNIFI_CONTROLLER_URL) {
+    warnings.push('UNIFI_CONTROLLER_URL is not set. Network authorization will fail.')
+  }
+  if (!process.env.UNIFI_USERNAME || !process.env.UNIFI_PASSWORD) {
+    warnings.push('UNIFI_USERNAME or UNIFI_PASSWORD is not set. Network authorization will fail.')
+  }
+
+  return { errors, warnings, isProduction }
+}
+
 export async function register() {
   // Only run on the server (not during build or in edge runtime)
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     const { runConnectionSync, runDPICache, runCleanupJobs, runExpiryReminders } =
       await import('./lib/cron-runner')
     const { structuredLogger } = await import('./lib/structured-logger')
+
+    // Validate secrets first
+    const { errors, warnings, isProduction } = validateSecrets()
+
+    if (errors.length > 0) {
+      console.error('\n=== CRITICAL CONFIGURATION ERRORS ===')
+      errors.forEach((error) => console.error(`❌ ${error}`))
+      console.error('=====================================\n')
+
+      if (isProduction) {
+        // Fail in production
+        throw new Error(
+          'Critical configuration errors detected. Fix the above errors before starting in production.'
+        )
+      } else {
+        // Warn in development
+        console.warn(
+          '⚠️  Development mode: continuing despite errors, but fix them before deploying.'
+        )
+      }
+    }
+
+    if (warnings.length > 0) {
+      console.warn('\n=== CONFIGURATION WARNINGS ===')
+      warnings.forEach((warning) => console.warn(`⚠️  ${warning}`))
+      console.warn('==============================\n')
+    }
+
+    if (errors.length === 0 && warnings.length === 0 && isProduction) {
+      structuredLogger.info('Production configuration validated successfully')
+    }
 
     structuredLogger.info('Starting background job scheduler')
 
