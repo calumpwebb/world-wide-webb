@@ -1,8 +1,19 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { db, sessions, users } from '@/lib/db'
-import { eq, and, gt } from 'drizzle-orm'
 
+/**
+ * Edge-compatible middleware for Better Auth
+ *
+ * NOTE: This middleware only does optimistic redirects based on cookie presence.
+ * Actual session validation MUST happen server-side in pages/API routes.
+ * Edge runtime doesn't support SQLite/database access, so we can't validate
+ * sessions here.
+ *
+ * For production security:
+ * - All admin pages use getSession() to verify role and TOTP status
+ * - All API routes validate session server-side
+ * - This middleware just provides better UX (fast redirects)
+ */
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
@@ -11,7 +22,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Get session cookie
+  // Get session cookie (optimistic check only - NOT secure on its own)
   const sessionToken = request.cookies.get('better-auth.session_token')?.value
 
   // Check if it's an admin route (but not login or setup-2fa)
@@ -20,42 +31,8 @@ export async function middleware(request: NextRequest) {
 
   if (isAdminRoute) {
     if (!sessionToken) {
-      // No session - redirect to login
-      return NextResponse.redirect(new URL('/admin/login', request.url))
-    }
-
-    // Validate session server-side
-    try {
-      const now = new Date()
-      const result = db
-        .select({
-          userId: sessions.userId,
-          expiresAt: sessions.expiresAt,
-          role: users.role,
-          twoFactorEnabled: users.twoFactorEnabled,
-        })
-        .from(sessions)
-        .innerJoin(users, eq(sessions.userId, users.id))
-        .where(and(eq(sessions.token, sessionToken), gt(sessions.expiresAt, now)))
-        .get()
-
-      if (!result) {
-        // Invalid or expired session
-        return NextResponse.redirect(new URL('/admin/login', request.url))
-      }
-
-      // Check if user is admin
-      if (result.role !== 'admin') {
-        // Not an admin - redirect to guest portal
-        return NextResponse.redirect(new URL('/portal', request.url))
-      }
-
-      // Check if 2FA is enabled (redirect to setup if not)
-      if (!result.twoFactorEnabled && pathname !== '/admin/setup-2fa') {
-        return NextResponse.redirect(new URL('/admin/setup-2fa', request.url))
-      }
-    } catch (error) {
-      console.error('Middleware session validation error:', error)
+      // No session cookie - redirect to login
+      // Pages will do full server-side validation
       return NextResponse.redirect(new URL('/admin/login', request.url))
     }
   }
@@ -65,28 +42,8 @@ export async function middleware(request: NextRequest) {
 
   if (isPortalRoute) {
     if (!sessionToken) {
-      // No session - redirect to guest login
-      return NextResponse.redirect(new URL('/', request.url))
-    }
-
-    // Validate session server-side
-    try {
-      const now = new Date()
-      const result = db
-        .select({
-          userId: sessions.userId,
-          expiresAt: sessions.expiresAt,
-        })
-        .from(sessions)
-        .where(and(eq(sessions.token, sessionToken), gt(sessions.expiresAt, now)))
-        .get()
-
-      if (!result) {
-        // Invalid or expired session
-        return NextResponse.redirect(new URL('/', request.url))
-      }
-    } catch (error) {
-      console.error('Middleware session validation error:', error)
+      // No session cookie - redirect to guest login
+      // Pages will do full server-side validation
       return NextResponse.redirect(new URL('/', request.url))
     }
   }
