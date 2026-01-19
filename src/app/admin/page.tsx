@@ -12,6 +12,10 @@ import {
   Loader2,
   Shield,
   Signal,
+  AlertTriangle,
+  Bell,
+  Info,
+  X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -41,6 +45,16 @@ interface ActivityEvent {
   user?: string
 }
 
+interface Alert {
+  id: string
+  type: 'expiring' | 'failed_auth' | 'new_guest' | 'high_bandwidth'
+  severity: 'info' | 'warning' | 'critical'
+  title: string
+  message: string
+  timestamp: string
+  link?: string
+}
+
 export default function AdminDashboard() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
@@ -53,6 +67,8 @@ export default function AdminDashboard() {
   })
   const [devices, setDevices] = useState<ActiveDevice[]>([])
   const [activities, setActivities] = useState<ActivityEvent[]>([])
+  const [alerts, setAlerts] = useState<Alert[]>([])
+  const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set())
 
   const fetchDashboardData = useCallback(async () => {
     try {
@@ -75,6 +91,13 @@ export default function AdminDashboard() {
       if (activityRes.ok) {
         const activityData = await activityRes.json()
         setActivities(activityData.events || [])
+      }
+
+      // Fetch alerts
+      const alertsRes = await fetch('/api/admin/alerts')
+      if (alertsRes.ok) {
+        const alertsData = await alertsRes.json()
+        setAlerts(alertsData.alerts || [])
       }
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error)
@@ -164,6 +187,34 @@ export default function AdminDashboard() {
     }
   }
 
+  const getAlertIcon = (severity: Alert['severity']) => {
+    switch (severity) {
+      case 'critical':
+        return <AlertTriangle className="h-4 w-4 text-red-500" />
+      case 'warning':
+        return <AlertTriangle className="h-4 w-4 text-yellow-500" />
+      default:
+        return <Info className="h-4 w-4 text-blue-500" />
+    }
+  }
+
+  const getAlertBorderColor = (severity: Alert['severity']) => {
+    switch (severity) {
+      case 'critical':
+        return 'border-red-500/50 bg-red-500/5'
+      case 'warning':
+        return 'border-yellow-500/50 bg-yellow-500/5'
+      default:
+        return 'border-blue-500/50 bg-blue-500/5'
+    }
+  }
+
+  const dismissAlert = (alertId: string) => {
+    setDismissedAlerts((prev) => new Set([...Array.from(prev), alertId]))
+  }
+
+  const visibleAlerts = alerts.filter((alert) => !dismissedAlerts.has(alert.id))
+
   if (isLoading) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center p-4">
@@ -198,6 +249,42 @@ export default function AdminDashboard() {
             </Button>
           </div>
         </div>
+
+        {/* Alerts */}
+        {visibleAlerts.length > 0 && (
+          <div className="space-y-3">
+            {visibleAlerts.map((alert) => (
+              <div
+                key={alert.id}
+                className={`flex items-start gap-3 rounded-lg border p-4 ${getAlertBorderColor(alert.severity)}`}
+              >
+                <div className="mt-0.5">{getAlertIcon(alert.severity)}</div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium">{alert.title}</p>
+                    <Bell className="h-3 w-3 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">{alert.message}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {alert.link && (
+                    <Button variant="ghost" size="sm" onClick={() => router.push(alert.link!)}>
+                      View
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                    onClick={() => dismissAlert(alert.id)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Stats Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
