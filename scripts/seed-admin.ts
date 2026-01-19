@@ -3,16 +3,13 @@ import { drizzle } from 'drizzle-orm/better-sqlite3'
 import { join } from 'path'
 import { users, accounts } from '../src/lib/db/schema'
 import { eq } from 'drizzle-orm'
-import { randomUUID, scrypt, randomBytes } from 'crypto'
-import { promisify } from 'util'
+import { randomUUID } from 'crypto'
+import bcrypt from 'bcryptjs'
 
-const scryptAsync = promisify(scrypt)
-
-// Hash password using scrypt (same as Better Auth)
+// Hash password using bcrypt (consistent with auth.ts)
 async function hashPassword(password: string): Promise<string> {
-  const salt = randomBytes(16).toString('hex')
-  const derivedKey = (await scryptAsync(password, salt, 64)) as Buffer
-  return `${salt}:${derivedKey.toString('hex')}`
+  const salt = await bcrypt.genSalt(10)
+  return bcrypt.hash(password, salt)
 }
 
 const dbPath =

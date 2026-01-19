@@ -3,6 +3,7 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { twoFactor } from 'better-auth/plugins/two-factor'
 import { db } from './db'
 import * as schema from './db/schema'
+import bcrypt from 'bcryptjs'
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -21,6 +22,15 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false, // Admin is pre-verified
+    password: {
+      hash: async (password: string) => {
+        const salt = await bcrypt.genSalt(10)
+        return bcrypt.hash(password, salt)
+      },
+      verify: async ({ hash, password }: { hash: string; password: string }) => {
+        return bcrypt.compare(password, hash)
+      },
+    },
   },
 
   // TOTP 2FA for admin
