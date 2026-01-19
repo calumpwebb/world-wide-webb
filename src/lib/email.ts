@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer'
 import { Resend } from 'resend'
+import { escapeHtml } from './utils'
 
 const provider = process.env.EMAIL_PROVIDER || 'mailpit'
 
@@ -81,9 +82,9 @@ export async function sendVerificationEmail(email: string, code: string, name: s
       <body>
         <div class="container">
           <h1>Welcome to World Wide Webb</h1>
-          <p>Hi ${name},</p>
+          <p>Hi ${escapeHtml(name)},</p>
           <p>Your verification code is:</p>
-          <div class="code">${code}</div>
+          <div class="code">${escapeHtml(code)}</div>
           <p>This code will expire in 10 minutes.</p>
           <p>If you didn't request this code, you can safely ignore this email.</p>
           <div class="footer">
@@ -177,27 +178,27 @@ export async function sendAdminNotification(guest: {
           <table>
             <tr>
               <td>Name</td>
-              <td>${guest.name}</td>
+              <td>${escapeHtml(guest.name)}</td>
             </tr>
             <tr>
               <td>Email</td>
-              <td>${guest.email}</td>
+              <td>${escapeHtml(guest.email)}</td>
             </tr>
             <tr>
               <td>MAC Address</td>
-              <td class="mono">${guest.macAddress}</td>
+              <td class="mono">${escapeHtml(guest.macAddress)}</td>
             </tr>
             <tr>
               <td>IP Address</td>
-              <td class="mono">${guest.ipAddress || 'N/A'}</td>
+              <td class="mono">${escapeHtml(guest.ipAddress || 'N/A')}</td>
             </tr>
             <tr>
               <td>Authorized</td>
-              <td>${guest.authorizedAt.toLocaleString()}</td>
+              <td>${escapeHtml(guest.authorizedAt.toLocaleString())}</td>
             </tr>
             <tr>
               <td>Expires</td>
-              <td>${guest.expiresAt.toLocaleString()}</td>
+              <td>${escapeHtml(guest.expiresAt.toLocaleString())}</td>
             </tr>
           </table>
           <a href="${process.env.NEXT_PUBLIC_APP_URL}/admin/guests" class="button">
@@ -251,10 +252,10 @@ export async function sendExpiryReminder(
     .map(
       (guest) => `
     <tr>
-      <td>${guest.name}</td>
-      <td>${guest.email}</td>
-      <td class="mono">${guest.macAddress}</td>
-      <td>${guest.expiresAt.toLocaleString()}</td>
+      <td>${escapeHtml(guest.name)}</td>
+      <td>${escapeHtml(guest.email)}</td>
+      <td class="mono">${escapeHtml(guest.macAddress)}</td>
+      <td>${escapeHtml(guest.expiresAt.toLocaleString())}</td>
     </tr>
   `
     )

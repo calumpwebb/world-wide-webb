@@ -498,11 +498,12 @@ describe('Guest Authentication Flow', () => {
       const response = await verifyCode(request)
       const data = await response.json()
 
-      // Should still succeed but with warning
-      expect(response.status).toBe(200)
-      expect(data.success).toBe(true)
-      expect(data.warning).toBeDefined()
-      expect(data.warning).toContain('Network authorization failed')
+      // Should fail fast with 503 when ALLOW_OFFLINE_AUTH is false (default)
+      expect(response.status).toBe(503)
+      expect(data.error).toBeDefined()
+      expect(data.error).toContain('Network authorization failed')
+      expect(data.recoverySteps).toBeDefined()
+      expect(Array.isArray(data.recoverySteps)).toBe(true)
     })
   })
 

@@ -4,6 +4,7 @@ import { db, verificationCodes, rateLimits } from '@/lib/db'
 import { sendVerificationEmail, generateVerificationCode } from '@/lib/email'
 import { logger } from '@/lib/logger'
 import { eq, and } from 'drizzle-orm'
+import { sanitizeName, isValidMac } from '@/lib/utils'
 
 const requestSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -27,6 +28,20 @@ export async function POST(request: NextRequest) {
     }
 
     const { email, name, macAddress } = result.data
+
+    // Validate MAC address if provided
+    if (macAddress && !isValidMac(macAddress)) {
+      return NextResponse.json({ error: 'Invalid MAC address format' }, { status: 400 })
+    }
+
+    // Sanitize name to prevent XSS
+    const sanitizedName = sanitizeName(name)
+    if (!sanitizedName || sanitizedName.length === 0) {
+      return NextResponse.json(
+        { error: 'Invalid name - must contain at least one valid character' },
+        { status: 400 }
+      )
+    }
 
     // Check rate limit
     const now = new Date()
@@ -75,26 +90,26 @@ export async function POST(request: NextRequest) {
     const code = generateVerificationCode()
     const expiresAt = new Date(now.getTime() + CODE_EXPIRY_MINUTES * 60 * 1000)
 
-    // Save verification code
+    // Save verification code with sanitized name
     await db.insert(verificationCodes).values({
       email,
       code,
       expiresAt,
       macAddress: macAddress || null,
-      name,
+      name: sanitizedName,
       used: false,
       attempts: 0,
       resendCount: 0,
     })
 
-    // Send verification email
-    await sendVerificationEmail(email, code, name)
+    // Send verification email with sanitized name
+    await sendVerificationEmail(email, code, sanitizedName)
 
-    // Log code sent event
+    // Log code sent event with sanitized name
     logger.codeSent({
       ipAddress: logger.getClientIP(request.headers),
       email,
-      name,
+      name: sanitizedName,
       macAddress: macAddress || undefined,
     })
 

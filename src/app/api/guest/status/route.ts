@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db, guests, users } from '@/lib/db'
 import { eq, and, gt } from 'drizzle-orm'
+import { isValidMac, normalizeMac } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,12 +14,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'MAC address is required' }, { status: 400 })
     }
 
-    // Normalize MAC address (uppercase, colons)
-    const normalizedMac = mac
-      .toUpperCase()
-      .replace(/[^A-F0-9]/g, '')
-      .replace(/(.{2})/g, '$1:')
-      .slice(0, -1)
+    // Validate MAC address format
+    if (!isValidMac(mac)) {
+      return NextResponse.json({ error: 'Invalid MAC address format' }, { status: 400 })
+    }
+
+    // Normalize MAC address (lowercase, colons)
+    const normalizedMac = normalizeMac(mac)
 
     // Check if this MAC is authorized
     const guest = db
