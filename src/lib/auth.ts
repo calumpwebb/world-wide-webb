@@ -40,6 +40,11 @@ export const auth = betterAuth({
         return bcrypt.compare(password, hash)
       },
     },
+    sendResetPassword: async ({ user, url }) => {
+      const { sendPasswordResetEmail } = await import('./email')
+      await sendPasswordResetEmail(user.email, url)
+    },
+    resetPasswordTokenExpiresIn: 3600, // 1 hour (in seconds)
   },
 
   // TOTP 2FA for admin

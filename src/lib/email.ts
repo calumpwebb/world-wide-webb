@@ -375,6 +375,103 @@ export async function sendExpiryReminder(
   }
 }
 
+/**
+ * Send password reset email to admin
+ * Called by Better Auth when admin requests password reset
+ */
+export async function sendPasswordResetEmail(email: string, resetUrl: string) {
+  const subject = 'Reset your admin password'
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+          }
+          .container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 40px 20px;
+          }
+          h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin: 0 0 24px 0;
+          }
+          p {
+            font-size: 16px;
+            line-height: 1.5;
+            margin: 0 0 16px 0;
+            color: #a1a1aa;
+          }
+          .button {
+            display: inline-block;
+            background: #fff;
+            color: #000;
+            padding: 16px 32px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            margin: 24px 0;
+            text-align: center;
+          }
+          .footer {
+            color: #52525b;
+            font-size: 14px;
+            margin-top: 40px;
+            padding-top: 24px;
+            border-top: 1px solid #27272a;
+          }
+          .warning {
+            background: #171717;
+            border: 1px solid #27272a;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 24px 0;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>Reset Your Password</h1>
+          <p>You recently requested to reset your password for the World Wide Webb admin panel.</p>
+          <p>Click the button below to reset your password. This link will expire in 1 hour.</p>
+          <a href="${escapeHtml(resetUrl)}" class="button">Reset Password</a>
+          <div class="warning">
+            <p style="margin: 0; color: #a1a1aa;">If you didn't request this password reset, you can safely ignore this email. Your password will remain unchanged.</p>
+          </div>
+          <div class="footer">
+            <p>World Wide Webb Admin Panel</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `
+
+  if (provider === 'resend' && resend) {
+    return resend.emails.send({
+      from: fromEmail,
+      to: email,
+      subject,
+      html,
+    })
+  } else {
+    return mailpitTransport.sendMail({
+      from: fromEmail,
+      to: email,
+      subject,
+      html,
+    })
+  }
+}
+
 // Generate a 6-digit verification code
 export function generateVerificationCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString()

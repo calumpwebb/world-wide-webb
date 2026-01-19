@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { authClient } from '@/lib/auth-client'
+import Link from 'next/link'
 
 const formSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -375,6 +376,15 @@ export default function AdminLoginPage() {
                 'Sign In'
               )}
             </Button>
+
+            <div className="text-center">
+              <Link
+                href="/admin/forgot-password"
+                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Forgot your password?
+              </Link>
+            </div>
           </form>
         </CardContent>
       </Card>
