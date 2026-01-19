@@ -7,7 +7,14 @@ import * as schema from './db/schema'
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: 'sqlite',
-    schema,
+    schema: {
+      // Map plural exports to singular names expected by Better Auth
+      user: schema.users,
+      session: schema.sessions,
+      account: schema.accounts,
+      verification: schema.verifications,
+      twoFactor: schema.twoFactors,
+    },
   }),
 
   // Email + Password for admin
