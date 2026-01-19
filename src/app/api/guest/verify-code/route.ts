@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, verificationCodes, users, guests, activityLogs } from '@/lib/db';
 import { sendAdminNotification } from '@/lib/email';
+import { unifi } from '@/lib/unifi';
 import { eq, and, gt } from 'drizzle-orm';
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
@@ -166,8 +167,19 @@ export async function POST(request: NextRequest) {
         .run();
     }
 
-    // TODO: Authorize MAC on Unifi Controller
-    // await unifi.authorizeGuest(macAddress, GUEST_AUTH_DAYS * 24 * 60 * 60);
+    // Authorize MAC on Unifi Controller (if MAC is provided)
+    let unifiAuthorized = false;
+    if (macAddress) {
+      try {
+        unifiAuthorized = await unifi.authorizeGuest(macAddress, GUEST_AUTH_DAYS * 24 * 60);
+        if (!unifiAuthorized) {
+          console.warn('Unifi authorization failed for MAC:', macAddress);
+        }
+      } catch (err) {
+        // Log but don't fail - guest can still be tracked in our DB
+        console.error('Unifi authorization error:', err);
+      }
+    }
 
     // Log success
     db.insert(activityLogs)
@@ -181,6 +193,7 @@ export async function POST(request: NextRequest) {
           email: normalizedEmail,
           expiresAt: expiresAt.toISOString(),
           isReturning: !!existingGuest,
+          unifiAuthorized,
         }),
       })
       .run();

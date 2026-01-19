@@ -11,7 +11,7 @@
 - [x] **Better Auth Configuration** - Setup Better Auth with email + password for admin, passwordless for guests, TOTP plugin, session management, rate limiting
 - [x] **Guest Email Verification API** (`POST /api/guest/verify-email`) - Send 6-digit code, rate limiting (5/hour per email), validation, email service integration
 - [x] **Guest Code Verification API** (`POST /api/guest/verify-code`) - Verify code (3 attempts), create Better Auth user, authorize MAC on Unifi, save guest record, log auth_success
-- [ ] **Unifi Controller Client** (`lib/unifi.ts`) - Login, authorize guest, revoke guest, get active clients, get DPI stats, get connection events
+- [x] **Unifi Controller Client** (`lib/unifi.ts`) - Login, authorize guest, revoke guest, get active clients, get DPI stats, get connection events
 - [x] **Guest Landing Page** (`/page.tsx` in `(guest)` route) - Email entry form, name field, terms checkbox, dark mode UI (black bg), form validation with Zod, auto-detect MAC from URL
 - [x] **Guest Verification Page** (`/verify/page.tsx`) - Display 6-digit code input (one-time-code autocomplete), resend code button with cooldown, error handling, rate limit messages
 - [x] **Guest Success Page** (`/success/page.tsx`) - Welcome message, show expiry countdown, auto-close after 3s (for iOS captive portal), returning guest message
@@ -61,6 +61,7 @@
 - [x] **Email Service** - Verification code emails and admin notifications with styled HTML templates
 - [x] **Guest Authentication Flow** - Complete verify-email, verify-code, resend-code, status APIs
 - [x] **Guest UI Pages** - Landing page, verification page, success page with dark mode styling
+- [x] **Unifi Controller Client** - Login, authorize/revoke guests, get active clients, DPI stats
 
 ## Notes
 
