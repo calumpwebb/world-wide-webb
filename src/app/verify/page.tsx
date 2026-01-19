@@ -64,13 +64,21 @@ export default function VerifyPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        setError(data.error || 'Verification failed')
+        // Provide actionable error messages
+        if (data.expired) {
+          setError('Code has expired. Redirecting to get a new code...')
+          setTimeout(() => router.push('/'), 2000)
+        } else if (response.status === 429) {
+          setError('Too many incorrect attempts. Please request a new code.')
+        } else if (response.status === 503) {
+          setError(
+            'Network service unavailable. Please contact the network administrator or try again later.'
+          )
+        } else {
+          setError(data.error || 'Invalid verification code. Please check the code and try again.')
+        }
         setCode('')
         setIsLoading(false)
-
-        if (data.expired) {
-          setTimeout(() => router.push('/'), 2000)
-        }
         return
       }
 
@@ -79,8 +87,9 @@ export default function VerifyPage() {
       sessionStorage.removeItem('verifyName')
       sessionStorage.removeItem('verifyMac')
       router.push('/success')
-    } catch {
-      setError('Network error. Please try again.')
+    } catch (err) {
+      console.error('Network error during verification:', err)
+      setError('Unable to verify code. Please check your internet connection and try again.')
       setIsLoading(false)
     }
   }
@@ -108,13 +117,22 @@ export default function VerifyPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        setError(data.error || 'Failed to resend code')
+        // Provide actionable error messages for resend
+        if (response.status === 429) {
+          setError('Too many resend attempts. Please wait before requesting another code.')
+        } else {
+          setError(
+            data.error ||
+              'Failed to resend code. Please go back and start over if the problem persists.'
+          )
+        }
       } else {
         setResendCooldown(RESEND_COOLDOWN)
         setCode('')
       }
-    } catch {
-      setError('Network error. Please try again.')
+    } catch (err) {
+      console.error('Network error during resend:', err)
+      setError('Unable to resend code. Please check your internet connection and try again.')
     } finally {
       setIsResending(false)
     }

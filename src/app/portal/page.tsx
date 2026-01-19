@@ -151,6 +151,7 @@ function PortalDashboardContent() {
     setIsRefreshing(true)
     await fetchDevices()
     setIsRefreshing(false)
+    toast.success('Devices refreshed')
   }
 
   const handleSignOut = async () => {

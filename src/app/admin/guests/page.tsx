@@ -137,6 +137,7 @@ function GuestManagementContent() {
     setIsRefreshing(true)
     await fetchGuests(pagination.page)
     setIsRefreshing(false)
+    toast.success('Guest list refreshed')
   }
 
   const handlePageChange = (newPage: number) => {

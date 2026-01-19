@@ -52,7 +52,21 @@ function GuestLandingForm() {
       const result = await response.json()
 
       if (!response.ok) {
-        setError(result.error || 'Failed to send verification code')
+        // Provide actionable error messages
+        if (response.status === 429) {
+          setError(
+            result.error || 'Too many attempts. Please wait a few minutes before trying again.'
+          )
+        } else if (response.status === 503) {
+          setError(
+            'Network service temporarily unavailable. Please try again in a moment or contact the network administrator.'
+          )
+        } else {
+          setError(
+            result.error ||
+              'Failed to send verification code. Please check your email address and try again.'
+          )
+        }
         return
       }
 
@@ -64,8 +78,11 @@ function GuestLandingForm() {
       }
 
       router.push('/verify')
-    } catch {
-      setError('Network error. Please try again.')
+    } catch (err) {
+      console.error('Network error:', err)
+      setError(
+        'Unable to connect to the network. Please check your internet connection and try again.'
+      )
     } finally {
       setIsLoading(false)
     }

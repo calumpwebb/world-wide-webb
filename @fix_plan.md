@@ -198,11 +198,12 @@
   - [ ] Add Redis caching layer for Unifi API calls (optional future enhancement)
   - [ ] Frontend bundle size optimization (optional future enhancement)
 
-- [ ] **User Experience**
-  - [ ] Loading states for all async buttons
-  - [ ] Better error messages with actionable recovery steps
-  - [ ] Toast notifications for background actions
-  - [ ] Progressive web app (PWA) support for guest portal
+- [x] **User Experience** - ✅ **COMPLETED (2026-01-19)** - Loading states, error messages, toast notifications, confirmation dialogs
+  - [x] Loading states for all async buttons - Added to device input fields, dashboard error handling with toast notifications
+  - [x] Better error messages with actionable recovery steps - Improved error messages across guest landing, verify pages, and admin dashboard with specific guidance for 429, 503, network errors
+  - [x] Toast notifications for background actions - Added success toasts for manual refresh actions on admin dashboard, portal dashboard, devices page, and guests page
+  - [x] Confirmation dialogs for critical actions - Already implemented: revoke guests (AlertDialog), TOTP reset (Dialog with password), backup codes (Dialog with password), password change (requires current password)
+  - [ ] Progressive web app (PWA) support for guest portal (optional future enhancement)
 
 ### Missing Features from PRD (Optional)
 
@@ -219,6 +220,26 @@
   - **Implementation:** Background job that ensures DB and Unifi stay in sync, catches manual revocations or Unifi failures
 
 ## Notes
+
+### Recent Enhancements (2026-01-19 - Latest)
+- **User Experience Improvements** (2026-01-19 Latest): Enhanced UI feedback and error handling
+  - **Loading States**: Added toast notifications for dashboard data fetch errors (admin dashboard now shows error toasts instead of silent failures)
+  - **Loading States**: Device name input fields now properly disabled during save operations (prevents concurrent edits)
+  - **Error Messages**: Improved error messages with actionable recovery steps across guest landing and verify pages
+    - Added specific handling for 429 (rate limit) and 503 (service unavailable) status codes
+    - Network errors now include guidance to check internet connection
+    - Code expiry errors redirect users with clear messaging
+  - **Toast Notifications**: Added success feedback for manual refresh actions
+    - Admin dashboard: "Dashboard refreshed"
+    - Portal dashboard: "Devices refreshed"
+    - Devices page: "Devices refreshed"
+    - Guests page: "Guest list refreshed"
+  - **Error Message Improvements**:
+    - Guest landing: Status-specific error messages (429 rate limit, 503 service unavailable, generic failures)
+    - Verify page: Expired code auto-redirect with message, rate limit warnings, invalid code feedback
+    - Resend code: Rate limit messaging, connection error guidance
+  - All 39 unit tests passing, build succeeds with no errors
+  - Commit pending
 
 ### Recent Enhancements (2026-01-19 PM)
 - **Performance Optimizations** (Latest - 2026-01-19 PM): Comprehensive performance improvements across database queries, API responses, and network connections

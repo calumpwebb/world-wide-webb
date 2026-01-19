@@ -21,6 +21,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { authClient } from '@/lib/auth-client'
+import { toast } from 'sonner'
 
 interface DashboardStats {
   activeGuests: number
@@ -78,6 +79,8 @@ export default function AdminDashboard() {
       if (statsRes.ok) {
         const statsData = await statsRes.json()
         setStats(statsData)
+      } else {
+        toast.error('Failed to load dashboard statistics. Please try refreshing.')
       }
 
       // Fetch active devices
@@ -85,6 +88,8 @@ export default function AdminDashboard() {
       if (devicesRes.ok) {
         const devicesData = await devicesRes.json()
         setDevices(devicesData.devices || [])
+      } else {
+        toast.error('Failed to load active devices. Please try refreshing.')
       }
 
       // Fetch recent activity
@@ -92,6 +97,8 @@ export default function AdminDashboard() {
       if (activityRes.ok) {
         const activityData = await activityRes.json()
         setActivities(activityData.events || [])
+      } else {
+        toast.warning('Failed to load recent activity.')
       }
 
       // Fetch alerts
@@ -99,9 +106,12 @@ export default function AdminDashboard() {
       if (alertsRes.ok) {
         const alertsData = await alertsRes.json()
         setAlerts(alertsData.alerts || [])
+      } else {
+        toast.warning('Failed to load alerts.')
       }
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error)
+      toast.error('Network error. Please check your connection and try again.')
     }
   }, [])
 
@@ -153,6 +163,7 @@ export default function AdminDashboard() {
     setIsRefreshing(true)
     await fetchDashboardData()
     setIsRefreshing(false)
+    toast.success('Dashboard refreshed')
   }
 
   const handleLogout = async () => {

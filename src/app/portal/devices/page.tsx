@@ -134,6 +134,7 @@ function DeviceManagementContent() {
     setIsRefreshing(true)
     await fetchDevices()
     setIsRefreshing(false)
+    toast.success('Devices refreshed')
   }
 
   const startEditing = (device: Device) => {
@@ -244,6 +245,7 @@ function DeviceManagementContent() {
                               className="h-8 w-48"
                               maxLength={50}
                               autoFocus
+                              disabled={isSaving}
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') saveNickname(device.id)
                                 if (e.key === 'Escape') cancelEditing()
@@ -267,6 +269,7 @@ function DeviceManagementContent() {
                               size="icon"
                               className="h-8 w-8"
                               onClick={cancelEditing}
+                              disabled={isSaving}
                             >
                               <X className="h-4 w-4" />
                             </Button>
@@ -371,6 +374,7 @@ function DeviceManagementContent() {
                             className="h-8 w-48"
                             maxLength={50}
                             autoFocus
+                            disabled={isSaving}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') saveNickname(device.id)
                               if (e.key === 'Escape') cancelEditing()
@@ -394,6 +398,7 @@ function DeviceManagementContent() {
                             size="icon"
                             className="h-8 w-8"
                             onClick={cancelEditing}
+                            disabled={isSaving}
                           >
                             <X className="h-4 w-4" />
                           </Button>
