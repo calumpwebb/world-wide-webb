@@ -252,7 +252,3 @@ $([ -n "$NEXT_CYCLE" ] && echo "- Next Cycle: [Cycle $NEXT_CYCLE](cycle-$NEXT_CY
 EOF
 
 echo "✅ Generated: $CYCLE_FILE"
-EOF
-
-chmod +x .ralph/scripts/generate-cycle.sh
-echo "✅ Created enhanced generation script"
