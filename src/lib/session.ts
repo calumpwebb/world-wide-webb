@@ -59,8 +59,8 @@ export async function getValidSession(): Promise<SessionValidation> {
         twoFactorEnabled: result.twoFactorEnabled || false,
       },
     }
-  } catch (error) {
-    console.error('Session validation error:', error)
+  } catch {
+    // Expected during static page generation when cookies aren't available
     return { valid: false, user: null, error: 'invalid_session' }
   }
 }
