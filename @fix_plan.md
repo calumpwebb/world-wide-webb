@@ -27,11 +27,11 @@
 - [x] **Guest Portal Dashboard** (`/portal/page.tsx`) - Welcome message with name, connection status, time remaining, data usage, list of authorized MACs with status
 - [x] **Guest Device Management** (`/portal/devices/page.tsx`) - Edit device nicknames, view connection history per MAC, request time extension
 - [x] **Activity Logging System** (`lib/logger.ts`) - Log all events (connect, disconnect, auth_success, auth_fail, admin actions) with timestamps, user, MAC, IP, JSON details
-- [ ] **Background Sync Jobs** - Use `instrumentation.ts` with `setInterval` (NOT Vercel cron - remove vercel.json and /api/cron route). Keep lib/cron.ts functions, call them from instrumentation.ts. Connection event sync (every 1 min), DPI stats cache (every 5 min)
+- [x] **Background Sync Jobs** - Use `instrumentation.ts` with `setInterval`. Connection event sync (1 min), DPI stats cache (5 min), expiry cleanup, session cleanup
 - [x] **Email Service** (`lib/email.ts`) - Verification code emails, admin notification emails, password reset, styled HTML templates
 - [x] **Git Hooks & Code Quality** - Setup Husky + lint-staged + Prettier + ESLint, pre-commit hook auto-formats code
 - [x] **Docker Setup** - Dockerfile + docker-compose.yml with app + Mailpit, SQLite volume persistence, environment configuration
-- [ ] **Admin Notifications** - Send email when new guest authorized, guest expiry reminders (24h before), admin dashboard alerts
+- [x] **Admin Notifications** - Email on new guest authorized, guest expiry reminders (24h before via cron), dashboard alerts API
 
 ## Low Priority
 
@@ -67,6 +67,8 @@
 - [x] **Activity Logging System** (`lib/logger.ts`) - Centralized logging with typed events and IP extraction
 - [x] **Health Check Endpoint** (`GET /api/health`) - Database, Unifi, Email service connectivity checks
 - [x] **Metrics Endpoint** (`GET /api/metrics`) - Guest counts, auth attempts, active devices, admin stats
+- [x] **Background Sync Jobs** - instrumentation.ts with setInterval for connection sync, DPI cache, cleanup jobs, expiry reminders
+- [x] **Admin Notifications** - Email on new guest, expiry reminders (24h before), dashboard alerts API (`/api/admin/alerts`)
 
 ## Notes
 
