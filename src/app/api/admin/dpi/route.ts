@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { unifi } from '@/lib/unifi'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 // DPI category names from Unifi
 const DPI_CATEGORIES: Record<number, string> = {
   0: 'Unknown',

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db, activityLogs, users } from '@/lib/db'
+
+export const dynamic = 'force-dynamic'
 import { eq, desc, sql, like, or, and, gte, lte } from 'drizzle-orm'
 
 type EventType =

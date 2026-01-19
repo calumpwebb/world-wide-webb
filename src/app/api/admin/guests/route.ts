@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db, guests, users } from '@/lib/db'
+
+export const dynamic = 'force-dynamic'
 import { unifi } from '@/lib/unifi'
 import { eq, desc, like, or, sql, gt, lt } from 'drizzle-orm'
 
