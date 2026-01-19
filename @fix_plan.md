@@ -150,12 +150,13 @@
 
 ### 🟢 P2 - Medium Priority (Nice to Have)
 
-- [ ] **Monitoring & Alerting**
-  - [ ] Prometheus metrics endpoint (beyond /api/metrics)
-  - [ ] Grafana dashboard JSON config
-  - [ ] Alert rules for critical failures (Unifi down, DB errors)
-  - [ ] UptimeRobot or Healthchecks.io setup guide
-  - [ ] Log aggregation setup (Loki/Grafana or similar)
+- [x] **Monitoring & Alerting** - ✅ **COMPLETED (2026-01-19)** - Prometheus integration and comprehensive monitoring guide
+  - [x] Prometheus metrics endpoint (`/api/metrics/prometheus`) with 12 metrics in standard text format
+  - [x] Grafana dashboard JSON config with 4 panels (active guests, auth rate, devices, timeline)
+  - [x] Alert rules for critical failures (6 rules: auth failures, downtime, revocations, expiry warnings)
+  - [x] UptimeRobot and Healthchecks.io setup guide with examples
+  - [x] Log aggregation setup (Loki/Grafana configuration included)
+  - **Implementation:** Created `/api/metrics/prometheus` endpoint, comprehensive `docs/MONITORING.md` with Docker Compose setup, Prometheus config, Grafana dashboard, alerting rules, external monitoring integration, and troubleshooting guide
 
 - [x] **Database Backups** - ✅ **COMPLETED (2026-01-19)** - Comprehensive backup/restore system implemented
   - [x] Automated SQLite backup script (daily snapshots with VACUUM INTO)
@@ -178,8 +179,8 @@
 
 ### 🔵 P3 - Low Priority (Future Enhancements)
 
-- [ ] **Code Cleanup**
-  - [ ] Remove deprecated normalizeMac wrapper in src/lib/unifi.ts:180
+- [x] **Code Cleanup** - ✅ **PARTIALLY COMPLETED (2026-01-19)** - Deprecated code removed
+  - [x] Remove deprecated normalizeMac wrapper in src/lib/unifi.ts (replaced all calls with direct imports)
   - [ ] Replace magic numbers with named constants (e.g., 600000 → CODE_EXPIRY_MS)
   - [ ] Add JSDoc comments to complex functions
   - [ ] Extract hardcoded values to configuration
@@ -213,7 +214,20 @@
 ## Notes
 
 ### Recent Enhancements (2026-01-19 PM)
-- **DB/Unifi Authorization Sync Job** (Latest - 2026-01-19 Evening): Implemented automated mismatch detection
+- **Prometheus Monitoring Integration** (Latest - 2026-01-19): Production-grade observability
+  - Created `/api/metrics/prometheus` endpoint with 12 metrics in Prometheus text format
+  - Comprehensive monitoring guide (docs/MONITORING.md) with complete Prometheus + Grafana setup
+  - Includes Docker Compose configuration for monitoring stack (Prometheus, Grafana, Alertmanager)
+  - 6 pre-configured alert rules (auth failures, downtime, unusual activity, expiry warnings)
+  - Sample Grafana dashboard JSON with 4 panels (guests, auth rate, devices, timeline)
+  - External monitoring integration (UptimeRobot, Healthchecks.io)
+  - Log aggregation setup (Loki/Promtail configuration)
+  - Security best practices and troubleshooting guide
+- **Code Cleanup** (2026-01-19): Removed technical debt
+  - Removed deprecated normalizeMac wrapper method from UnifiController class
+  - Replaced all this.normalizeMac() calls with direct imports from utils
+  - Simplifies codebase and reduces maintenance burden
+- **DB/Unifi Authorization Sync Job** (Earlier - 2026-01-19 Evening): Implemented automated mismatch detection
   - Created syncAuthorizationMismatches() in src/lib/cron.ts
   - Runs every 5 minutes to detect guests authorized in DB but not on Unifi
   - Automatically re-authorizes with correct remaining time
