@@ -25,17 +25,9 @@ Thumbs.db
 *.swo
 *~
 
-# Ralph Loop - Session files and state (auto-generated)
-.ralph/state/
-.ralph/logs/
-.ralph/sessions/
-.ralph/.config
-.ralph/.cache
-
-# But keep cycle docs and scripts (these are part of the project)
-!.ralph/TASKS.md
-!.ralph/cycles/
-!.ralph/scripts/
+# Ralph Loop - All state files (auto-generated)
+.ralph/
+@fix_plan.md
 
 # Third-party tools and plugins
 third_party/
