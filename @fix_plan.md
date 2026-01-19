@@ -30,7 +30,7 @@
 - [ ] **Background Sync Jobs** - Connection event sync (every 1 min), DPI stats cache (every 5 min), expiry cleanup, session validation
 - [x] **Email Service** (`lib/email.ts`) - Verification code emails, admin notification emails, password reset, styled HTML templates
 - [x] **Git Hooks & Code Quality** - Setup Husky + lint-staged + Prettier + ESLint, pre-commit hook auto-formats code
-- [ ] **Docker Setup** - Dockerfile + docker-compose.yml with app + Mailpit, SQLite volume persistence, environment configuration
+- [x] **Docker Setup** - Dockerfile + docker-compose.yml with app + Mailpit, SQLite volume persistence, environment configuration
 - [ ] **Admin Notifications** - Send email when new guest authorized, guest expiry reminders (24h before), admin dashboard alerts
 
 ## Low Priority

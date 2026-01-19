@@ -1,0 +1,84 @@
+# World Wide Webb - Docker Compose
+# Development and production configurations
+
+services:
+  # ==========================================================================
+  # Main Application
+  # ==========================================================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+    container_name: world-wide-webb
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
+      - BETTER_AUTH_URL=${BETTER_AUTH_URL:-http://localhost:3000}
+      - DATABASE_PATH=/app/data/captive-portal.db
+      - UNIFI_CONTROLLER_URL=${UNIFI_CONTROLLER_URL}
+      - UNIFI_USERNAME=${UNIFI_USERNAME}
+      - UNIFI_PASSWORD=${UNIFI_PASSWORD}
+      - UNIFI_SITE=${UNIFI_SITE:-default}
+      - UNIFI_SKIP_SSL_VERIFY=${UNIFI_SKIP_SSL_VERIFY:-true}
+      - SMTP_HOST=${SMTP_HOST:-mailpit}
+      - SMTP_PORT=${SMTP_PORT:-1025}
+      - SMTP_SECURE=${SMTP_SECURE:-false}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
+      - EMAIL_PROVIDER=${EMAIL_PROVIDER:-mailpit}
+      - RESEND_API_KEY=${RESEND_API_KEY:-}
+      - EMAIL_FROM=${EMAIL_FROM:-WiFi Guest Portal <wifi@localhost>}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@example.com}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-change-me}
+    volumes:
+      - app-data:/app/data
+    depends_on:
+      - mailpit
+    networks:
+      - captive-portal
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ==========================================================================
+  # Mailpit - Email Testing (Development)
+  # ==========================================================================
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: world-wide-webb-mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025"  # Web UI
+      - "1025:1025"  # SMTP
+    environment:
+      - MP_MAX_MESSAGES=500
+      - MP_DATA_FILE=/data/mailpit.db
+    volumes:
+      - mailpit-data:/data
+    networks:
+      - captive-portal
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  app-data:
+    driver: local
+  mailpit-data:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  captive-portal:
+    driver: bridge
