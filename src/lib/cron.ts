@@ -9,9 +9,10 @@
  */
 
 import { db, guests, networkStats, sessions, users } from '@/lib/db'
+import { sendExpiryReminder } from '@/lib/email'
 import { logger } from '@/lib/logger'
 import { unifi } from '@/lib/unifi'
-import { eq, lt } from 'drizzle-orm'
+import { eq, lt, gt, and, lte } from 'drizzle-orm'
 
 // Track last seen MACs for connection event detection
 let lastSeenMacs = new Set<string>()
@@ -298,6 +299,78 @@ export async function cleanupOldStats(): Promise<SyncResult> {
   }
 }
 
+// Track when we last sent expiry reminders (to avoid duplicate emails)
+let lastExpiryReminderTime = 0
+const EXPIRY_REMINDER_INTERVAL = 12 * 60 * 60 * 1000 // 12 hours
+
+/**
+ * Send expiry reminder emails for guests expiring within 24 hours
+ * Only sends once per 12 hours to avoid spam
+ */
+export async function sendExpiryReminders(): Promise<SyncResult> {
+  try {
+    const now = Date.now()
+
+    // Skip if we sent reminders recently
+    if (lastExpiryReminderTime > 0 && now - lastExpiryReminderTime < EXPIRY_REMINDER_INTERVAL) {
+      return {
+        success: true,
+        message: 'Skipped - reminders sent recently',
+        details: { lastSent: new Date(lastExpiryReminderTime).toISOString() },
+      }
+    }
+
+    const currentDate = new Date()
+    const twentyFourHoursFromNow = new Date(now + 24 * 60 * 60 * 1000)
+
+    // Find guests expiring in the next 24 hours (but not yet expired)
+    const expiringGuests = db
+      .select({
+        id: guests.id,
+        macAddress: guests.macAddress,
+        expiresAt: guests.expiresAt,
+        userName: users.name,
+        userEmail: users.email,
+      })
+      .from(guests)
+      .leftJoin(users, eq(guests.userId, users.id))
+      .where(and(gt(guests.expiresAt, currentDate), lte(guests.expiresAt, twentyFourHoursFromNow)))
+      .all()
+
+    if (expiringGuests.length === 0) {
+      return {
+        success: true,
+        message: 'No guests expiring soon',
+        details: { count: 0 },
+      }
+    }
+
+    // Send reminder email
+    await sendExpiryReminder(
+      expiringGuests.map((g) => ({
+        name: g.userName || 'Guest',
+        email: g.userEmail || 'Unknown',
+        macAddress: g.macAddress || 'Unknown',
+        expiresAt: g.expiresAt,
+      }))
+    )
+
+    lastExpiryReminderTime = now
+
+    return {
+      success: true,
+      message: `Sent expiry reminder for ${expiringGuests.length} guests`,
+      details: { count: expiringGuests.length },
+    }
+  } catch (error) {
+    console.error('Expiry reminder error:', error)
+    return {
+      success: false,
+      message: `Expiry reminder failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    }
+  }
+}
+
 /**
  * Run all sync jobs
  */
@@ -309,6 +382,7 @@ export async function runAllJobs(): Promise<Record<string, SyncResult>> {
   results.expiryCleanup = await cleanupExpiredGuests()
   results.sessionCleanup = await cleanupExpiredSessions()
   results.statsCleanup = await cleanupOldStats()
+  results.expiryReminders = await sendExpiryReminders()
 
   return results
 }
