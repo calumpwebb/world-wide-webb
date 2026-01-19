@@ -236,9 +236,10 @@ function rotateBackups(config: BackupConfig) {
 
   // Also rotate offsite backups if configured
   if (config.offsiteDir && existsSync(config.offsiteDir)) {
-    const offsiteFiles = readdirSync(config.offsiteDir)
+    const offsitePath = config.offsiteDir // Store in const for TypeScript narrowing
+    const offsiteFiles = readdirSync(offsitePath)
       .filter((f) => f.startsWith('captive-portal-') && f.endsWith('.db'))
-      .map((f) => join(config.offsiteDir, f))
+      .map((f) => join(offsitePath, f))
 
     let offsiteDeletedCount = 0
     for (const file of offsiteFiles) {

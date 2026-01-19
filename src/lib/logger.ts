@@ -71,13 +71,23 @@ export function logAuthSuccess(entry: {
 }
 
 export function logAuthFail(entry: {
+  userId?: string
   ipAddress?: string | null
   email: string
-  reason: 'no_valid_code' | 'wrong_code' | 'expired_code' | 'max_attempts'
+  reason:
+    | 'no_valid_code'
+    | 'wrong_code'
+    | 'expired_code'
+    | 'max_attempts'
+    | 'unifi_authorization_failed'
+    | 'unifi_connection_error'
   remainingAttempts?: number
+  macAddress?: string
 }): void {
   log('auth_fail', {
+    userId: entry.userId,
     ipAddress: entry.ipAddress,
+    macAddress: entry.macAddress,
     details: {
       email: entry.email,
       reason: entry.reason,
