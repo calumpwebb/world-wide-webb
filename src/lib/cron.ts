@@ -11,6 +11,7 @@
 import { db, guests, networkStats, sessions, users, verificationCodes } from '@/lib/db'
 import { sendExpiryReminder } from '@/lib/email'
 import { logger } from '@/lib/logger'
+import { structuredLogger } from '@/lib/structured-logger'
 import { unifi } from '@/lib/unifi'
 import { eq, lt, gt, and, lte, inArray } from 'drizzle-orm'
 import {
@@ -141,7 +142,7 @@ export async function syncConnectionEvents(): Promise<SyncResult> {
           .where(inArray(guests.macAddress, Array.from(currentMacs)))
           .run()
       } catch (err) {
-        console.error(`Failed to batch update lastSeen:`, err)
+        structuredLogger.error('Failed to batch update lastSeen', err, { job: 'connection_sync' })
       }
     }
 
@@ -155,7 +156,7 @@ export async function syncConnectionEvents(): Promise<SyncResult> {
       },
     }
   } catch (error) {
-    console.error('Connection sync error:', error)
+    structuredLogger.error('Connection sync error', error, { job: 'connection_sync' })
     return {
       success: false,
       message: `Connection sync failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -235,7 +236,10 @@ export async function cacheDPIStats(): Promise<SyncResult> {
           const dpiStats = await unifi.getDPIStats(mac)
           return { mac, client, dpiStats }
         } catch (err) {
-          console.error(`Failed to fetch DPI stats for MAC ${mac}:`, err)
+          structuredLogger.error(`Failed to fetch DPI stats for MAC ${mac}`, err, {
+            job: 'dpi_cache',
+            mac,
+          })
           return { mac, client, dpiStats: null }
         }
       })
@@ -282,7 +286,10 @@ export async function cacheDPIStats(): Promise<SyncResult> {
           .run()
         cached++
       } catch (err) {
-        console.error(`Failed to insert network stats for MAC ${mac}:`, err)
+        structuredLogger.error(`Failed to insert network stats for MAC ${mac}`, err, {
+          job: 'dpi_cache',
+          mac,
+        })
       }
     }
 
@@ -292,7 +299,7 @@ export async function cacheDPIStats(): Promise<SyncResult> {
       details: { cached, total: activeClients.length },
     }
   } catch (error) {
-    console.error('DPI cache error:', error)
+    structuredLogger.error('DPI cache error', error, { job: 'dpi_cache' })
     return {
       success: false,
       message: `DPI cache failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -380,9 +387,12 @@ export async function syncAuthorizationMismatches(): Promise<SyncResult> {
               guestId: guest.id,
               newExpiresAt: guest.expiresAt,
             })
-            console.log(
-              `[Sync] Re-authorized MAC ${mac} for ${remainingMinutes} minutes (expires: ${guest.expiresAt.toISOString()})`
-            )
+            structuredLogger.info(`Re-authorized MAC ${mac} for ${remainingMinutes} minutes`, {
+              job: 'authorization_sync',
+              mac,
+              remainingMinutes,
+              expiresAt: guest.expiresAt.toISOString(),
+            })
           } else {
             errors.push(`Failed to re-authorize MAC ${mac}: Unifi returned false`)
           }
@@ -405,7 +415,7 @@ export async function syncAuthorizationMismatches(): Promise<SyncResult> {
       },
     }
   } catch (error) {
-    console.error('Authorization sync error:', error)
+    structuredLogger.error('Authorization sync error', error, { job: 'authorization_sync' })
     return {
       success: false,
       message: `Authorization sync failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -470,7 +480,7 @@ export async function cleanupExpiredGuests(): Promise<SyncResult> {
       },
     }
   } catch (error) {
-    console.error('Expiry cleanup error:', error)
+    structuredLogger.error('Expiry cleanup error', error, { job: 'cleanup_expired_guests' })
     return {
       success: false,
       message: `Expiry cleanup failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -494,7 +504,7 @@ export async function cleanupExpiredSessions(): Promise<SyncResult> {
       details: { deleted: result.changes },
     }
   } catch (error) {
-    console.error('Session cleanup error:', error)
+    structuredLogger.error('Session cleanup error', error, { job: 'cleanup_expired_sessions' })
     return {
       success: false,
       message: `Session cleanup failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -517,7 +527,7 @@ export async function cleanupOldStats(): Promise<SyncResult> {
       details: { deleted: result.changes },
     }
   } catch (error) {
-    console.error('Stats cleanup error:', error)
+    structuredLogger.error('Stats cleanup error', error, { job: 'cleanup_old_stats' })
     return {
       success: false,
       message: `Stats cleanup failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -568,7 +578,9 @@ export async function cleanupExpiredVerificationCodes(): Promise<SyncResult> {
       details: { deleted: result.changes },
     }
   } catch (error) {
-    console.error('Verification code cleanup error:', error)
+    structuredLogger.error('Verification code cleanup error', error, {
+      job: 'cleanup_verification_codes',
+    })
     return {
       success: false,
       message: `Verification code cleanup failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -639,7 +651,7 @@ export async function sendExpiryReminders(): Promise<SyncResult> {
       details: { count: expiringGuests.length },
     }
   } catch (error) {
-    console.error('Expiry reminder error:', error)
+    structuredLogger.error('Expiry reminder error', error, { job: 'expiry_reminders' })
     return {
       success: false,
       message: `Expiry reminder failed: ${error instanceof Error ? error.message : 'Unknown error'}`,

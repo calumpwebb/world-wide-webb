@@ -285,7 +285,37 @@
 ## Notes
 
 ### Recent Enhancements (2026-01-19 - Latest)
-- **Force Password Change on First Login** (2026-01-19 Latest): Implemented mandatory password change for new admin users
+- **Structured Logging Migration** (2026-01-19 Latest): Replaced console.* statements with structured logging for production observability
+  - **Scope**: Migrated all critical server-side logging to use `structuredLogger` singleton
+  - **Files Updated**:
+    - `src/lib/cron-runner.ts` (8 statements) - All cron job wrapper functions
+    - `src/lib/cron.ts` (14 statements) - Background sync jobs (connection events, DPI cache, authorization sync, cleanup jobs)
+    - `src/lib/unifi.ts` (5 statements) - Unifi Controller client (login failures, request errors)
+    - `src/lib/email.ts` (2 statements) - Email service warnings
+  - **Benefits**:
+    - **Production**: JSON-formatted logs parseable by log aggregators (Loki, Elasticsearch, CloudWatch)
+    - **Development**: Human-readable format with timestamps and context
+    - **Context**: All log entries include job/service name for filtering and alerting
+    - **Error Objects**: Full error stack traces captured in structured format
+  - **Example Output** (Production):
+    ```json
+    {"timestamp":"2026-01-19T20:40:15.342Z","level":"error","message":"DPI cache error","context":{"job":"dpi_cache"},"error":{"name":"Error","message":"Unifi request failed","stack":"..."}}
+    ```
+  - **Example Output** (Development):
+    ```
+    [2026-01-19T20:40:15.342Z] ERROR: DPI cache error {"job":"dpi_cache"} [Error: Unifi request failed]
+    ```
+  - **Impact**: Better production debugging, easier log analysis, improved monitoring/alerting capabilities
+  - All 49 unit tests passing, production build successful
+  - Client-side React components still use console.error (acceptable for browser debugging)
+
+- **Documentation Update** (2026-01-19 Latest): Updated PROJECT_STATUS.md test counts
+  - Updated test coverage from 38/39 to 49/50 tests (reflects disposable email test additions)
+  - Updated test file count from 3 to 4 files
+  - Updated duration metrics to match latest test run
+  - Ensures documentation accuracy for production deployment
+
+- **Force Password Change on First Login** (2026-01-19): Implemented mandatory password change for new admin users
   - **Database Schema**: Added `mustChangePassword` boolean field to users table with migration
   - **Change Password Page** (src/app/admin/change-password/page.tsx):
     - Three-step form: current password, new password, confirmation

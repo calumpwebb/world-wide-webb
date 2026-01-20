@@ -15,13 +15,19 @@ import {
   cleanupExpiredVerificationCodes,
   sendExpiryReminders,
 } from './cron'
+import { structuredLogger } from './structured-logger'
 
 export async function runConnectionSync() {
   const result = await syncConnectionEvents()
   if (result.success) {
-    console.log(`[Cron] Connection sync: ${result.message}`, result.details)
+    structuredLogger.info(`Connection sync: ${result.message}`, {
+      job: 'connection_sync',
+      ...result.details,
+    })
   } else {
-    console.error(`[Cron] Connection sync failed: ${result.message}`)
+    structuredLogger.error(`Connection sync failed: ${result.message}`, undefined, {
+      job: 'connection_sync',
+    })
   }
   return result
 }
@@ -29,9 +35,14 @@ export async function runConnectionSync() {
 export async function runDPICache() {
   const result = await cacheDPIStats()
   if (result.success) {
-    console.log(`[Cron] DPI cache: ${result.message}`, result.details)
+    structuredLogger.info(`DPI cache: ${result.message}`, {
+      job: 'dpi_cache',
+      ...result.details,
+    })
   } else {
-    console.error(`[Cron] DPI cache failed: ${result.message}`)
+    structuredLogger.error(`DPI cache failed: ${result.message}`, undefined, {
+      job: 'dpi_cache',
+    })
   }
   return result
 }
@@ -42,10 +53,15 @@ export async function runAuthorizationSync() {
     // Only log if we actually re-authorized something
     const reauthorized = (result.details?.reauthorized as number) || 0
     if (reauthorized > 0) {
-      console.log(`[Cron] Authorization sync: ${result.message}`, result.details)
+      structuredLogger.info(`Authorization sync: ${result.message}`, {
+        job: 'authorization_sync',
+        ...result.details,
+      })
     }
   } else {
-    console.error(`[Cron] Authorization sync failed: ${result.message}`)
+    structuredLogger.error(`Authorization sync failed: ${result.message}`, undefined, {
+      job: 'authorization_sync',
+    })
   }
   return result
 }
@@ -60,9 +76,16 @@ export async function runCleanupJobs() {
 
   for (const [job, result] of Object.entries(results)) {
     if (result.success) {
-      console.log(`[Cron] ${job}: ${result.message}`, result.details)
+      structuredLogger.info(`${job}: ${result.message}`, {
+        job: 'cleanup',
+        cleanupType: job,
+        ...result.details,
+      })
     } else {
-      console.error(`[Cron] ${job} failed: ${result.message}`)
+      structuredLogger.error(`${job} failed: ${result.message}`, undefined, {
+        job: 'cleanup',
+        cleanupType: job,
+      })
     }
   }
 
@@ -74,10 +97,15 @@ export async function runExpiryReminders() {
   if (result.success) {
     // Only log if we actually sent something (not skipped)
     if (!result.message.includes('Skipped')) {
-      console.log(`[Cron] Expiry reminders: ${result.message}`, result.details)
+      structuredLogger.info(`Expiry reminders: ${result.message}`, {
+        job: 'expiry_reminders',
+        ...result.details,
+      })
     }
   } else {
-    console.error(`[Cron] Expiry reminders failed: ${result.message}`)
+    structuredLogger.error(`Expiry reminders failed: ${result.message}`, undefined, {
+      job: 'expiry_reminders',
+    })
   }
   return result
 }

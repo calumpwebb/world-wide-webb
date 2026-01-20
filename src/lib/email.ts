@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer'
 import { Resend } from 'resend'
 import { escapeHtml } from './utils'
+import { structuredLogger } from './structured-logger'
 import { SMTP_DEFAULT_PORT } from './constants'
 import {
   EMAIL_FROM_DEFAULT,
@@ -217,7 +218,9 @@ export async function sendAdminNotification(guest: {
 
   const adminEmail = process.env.ADMIN_NOTIFY_EMAIL || process.env.ADMIN_EMAIL
   if (!adminEmail) {
-    console.warn('No admin email configured for notifications')
+    structuredLogger.warn('No admin email configured for notifications', {
+      context: 'email_service',
+    })
     return
   }
 
@@ -354,7 +357,9 @@ export async function sendExpiryReminder(
 
   const adminEmail = process.env.ADMIN_NOTIFY_EMAIL || process.env.ADMIN_EMAIL
   if (!adminEmail) {
-    console.warn('No admin email configured for notifications')
+    structuredLogger.warn('No admin email configured for notifications', {
+      context: 'email_service',
+    })
     return
   }
 

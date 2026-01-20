@@ -12,6 +12,7 @@
 
 import https from 'https'
 import { normalizeMac } from './utils'
+import { structuredLogger } from './structured-logger'
 import { UNIFI_DEFAULT_PORT, UNIFI_DEFAULT_IP, GUEST_AUTH_DURATION_MINUTES } from './constants'
 
 const CONTROLLER_URL =
@@ -129,7 +130,10 @@ class UnifiController {
       })
 
       if (!response.ok) {
-        console.error('Unifi login failed:', response.status, response.statusText)
+        structuredLogger.error('Unifi login failed', undefined, {
+          status: response.status,
+          statusText: response.statusText,
+        })
         return false
       }
 
@@ -149,7 +153,7 @@ class UnifiController {
       this.isLoggedIn = true
       return true
     } catch (error) {
-      console.error('Unifi login error:', error)
+      structuredLogger.error('Unifi login error', error)
       return false
     }
   }
@@ -231,14 +235,21 @@ class UnifiController {
       }
 
       if (!response.ok) {
-        console.error(`Unifi request failed: ${method} ${endpoint}`, response.status)
+        structuredLogger.error(`Unifi request failed: ${method} ${endpoint}`, undefined, {
+          method,
+          endpoint,
+          status: response.status,
+        })
         return null
       }
 
       const data = await response.json()
       return data as T
     } catch (error) {
-      console.error(`Unifi request error: ${method} ${endpoint}`, error)
+      structuredLogger.error(`Unifi request error: ${method} ${endpoint}`, error, {
+        method,
+        endpoint,
+      })
       return null
     }
   }
