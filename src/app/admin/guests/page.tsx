@@ -55,6 +55,7 @@ interface Guest {
     id: string
     name: string | null
     email: string | null
+    isDisposableEmail: boolean
   }
 }
 
@@ -341,7 +342,17 @@ function GuestManagementContent() {
                           <p className="font-medium">
                             {guest.nickname || guest.user.name || 'Unknown'}
                           </p>
-                          <p className="text-sm text-muted-foreground">{guest.user.email}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm text-muted-foreground">{guest.user.email}</p>
+                            {guest.user.isDisposableEmail && (
+                              <span
+                                className="rounded-full bg-yellow-500/10 px-2 py-0.5 text-xs text-yellow-500"
+                                title="Disposable email detected"
+                              >
+                                ⚠️ Temp
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <div className="flex items-center gap-2">
                           {guest.isOnline ? (

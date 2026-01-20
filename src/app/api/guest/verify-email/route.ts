@@ -11,6 +11,7 @@ import {
   ONE_HOUR_MS,
 } from '@/lib/constants'
 import { MAX_NAME_LENGTH } from '@/lib/constants/validation'
+import { isDisposableEmail, DISPOSABLE_EMAIL_ERROR } from '@/lib/disposable-domains'
 
 const requestSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -38,6 +39,18 @@ export async function POST(request: NextRequest) {
     }
 
     const { email, name, macAddress } = result.data
+
+    // Check for disposable email domains
+    const ALLOW_DISPOSABLE_EMAILS = process.env.ALLOW_DISPOSABLE_EMAILS === 'true'
+    if (!ALLOW_DISPOSABLE_EMAILS && isDisposableEmail(email)) {
+      logger.authFail({
+        ipAddress: logger.getClientIP(request.headers),
+        email,
+        name,
+        reason: 'disposable_email_blocked',
+      })
+      return NextResponse.json({ error: DISPOSABLE_EMAIL_ERROR }, { status: 400 })
+    }
 
     // Validate MAC address if provided
     if (macAddress && !isValidMac(macAddress)) {

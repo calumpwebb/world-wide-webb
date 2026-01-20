@@ -81,6 +81,7 @@ export async function GET(request: NextRequest) {
               userId: guests.userId,
               userName: users.name,
               userEmail: users.email,
+              isDisposableEmail: users.isDisposableEmail,
             })
             .from(guests)
             .leftJoin(users, eq(guests.userId, users.id))
@@ -103,6 +104,7 @@ export async function GET(request: NextRequest) {
               userId: guests.userId,
               userName: users.name,
               userEmail: users.email,
+              isDisposableEmail: users.isDisposableEmail,
             })
             .from(guests)
             .leftJoin(users, eq(guests.userId, users.id))
@@ -137,6 +139,7 @@ export async function GET(request: NextRequest) {
         id: guest.userId,
         name: guest.userName,
         email: guest.userEmail,
+        isDisposableEmail: guest.isDisposableEmail || false,
       },
     }))
 

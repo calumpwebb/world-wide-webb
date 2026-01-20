@@ -1,0 +1,1 @@
+ALTER TABLE `user` ADD `isDisposableEmail` integer DEFAULT false;

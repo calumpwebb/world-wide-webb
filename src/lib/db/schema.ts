@@ -13,6 +13,7 @@ export const users = sqliteTable('user', {
   twoFactorEnabled: integer('twoFactorEnabled', { mode: 'boolean' }).default(false),
   twoFactorSecret: text('twoFactorSecret'), // TOTP secret (admin only)
   mustChangePassword: integer('mustChangePassword', { mode: 'boolean' }).default(false), // Force password change on next login
+  isDisposableEmail: integer('isDisposableEmail', { mode: 'boolean' }).default(false), // Flag for disposable email detection
   createdAt: integer('createdAt', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   updatedAt: integer('updatedAt', { mode: 'timestamp' }).$defaultFn(() => new Date()),
 })

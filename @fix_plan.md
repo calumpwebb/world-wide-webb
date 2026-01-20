@@ -248,7 +248,20 @@
 
 ### Missing Features from PRD (Optional)
 
-- [ ] **Disposable Email Blocking** (PRD line 1702-1721) - Block temporary email services
+- [x] **Disposable Email Blocking** (PRD line 1702-1721) - ✅ **COMPLETED (2026-01-19 Evening)** - Block temporary email services
+  - [x] Created comprehensive disposable domain blocklist (350+ domains) in lib/disposable-domains.ts
+  - [x] Added database migration for isDisposableEmail boolean flag on users table
+  - [x] Implemented validation in verify-email API route with ALLOW_DISPOSABLE_EMAILS env var
+  - [x] Added disposable email flagging during user creation in verify-code route
+  - [x] Updated admin guests API to include isDisposableEmail in response
+  - [x] Added visual warning badge (⚠️ Temp) in admin guests UI for flagged emails
+  - [x] Created 11 comprehensive unit tests with 100% coverage
+  - [x] Updated .env.example with ALLOW_DISPOSABLE_EMAILS documentation
+  - [x] Extended logger.authFail signature to support 'disposable_email_blocked' reason
+  - **Implementation:** Blocks by default in production (ALLOW_DISPOSABLE_EMAILS=false), allows for development/testing when true
+  - **Admin visibility:** Flagged users show yellow warning badge in guest management panel
+  - **Logging:** All blocked attempts logged as auth_fail events with disposable_email_blocked reason
+  - All 49 tests passing, production build successful
 - [x] **Password Reset UI** (PRD line 313-319) - ✅ **COMPLETED (2026-01-19)** - Complete password reset flow for admin users
   - [x] Added sendResetPassword configuration to Better Auth (1-hour token expiry)
   - [x] Created sendPasswordResetEmail() with styled HTML template

@@ -73,7 +73,8 @@ export function logAuthSuccess(entry: {
 export function logAuthFail(entry: {
   userId?: string
   ipAddress?: string | null
-  email: string
+  email?: string
+  name?: string
   reason:
     | 'no_valid_code'
     | 'wrong_code'
@@ -81,6 +82,7 @@ export function logAuthFail(entry: {
     | 'max_attempts'
     | 'unifi_authorization_failed'
     | 'unifi_connection_error'
+    | 'disposable_email_blocked'
   remainingAttempts?: number
   macAddress?: string
 }): void {
@@ -90,6 +92,7 @@ export function logAuthFail(entry: {
     macAddress: entry.macAddress,
     details: {
       email: entry.email,
+      name: entry.name,
       reason: entry.reason,
       remainingAttempts: entry.remainingAttempts,
     },

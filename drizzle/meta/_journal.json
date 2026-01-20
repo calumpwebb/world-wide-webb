@@ -15,6 +15,13 @@
       "when": 1768855082126,
       "tag": "0001_gray_butterfly",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1768882368303,
+      "tag": "0002_true_gwen_stacy",
+      "breakpoints": true
     }
   ]
 }

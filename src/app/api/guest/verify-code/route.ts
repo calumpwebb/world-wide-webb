@@ -8,6 +8,7 @@ import { z } from 'zod'
 import { randomUUID, timingSafeEqual } from 'crypto'
 import { ONE_DAY_MS, CODE_VERIFICATION_MAX_ATTEMPTS_DEFAULT } from '@/lib/constants'
 import { isValidMac } from '@/lib/utils'
+import { isDisposableEmail } from '@/lib/disposable-domains'
 
 const requestSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -136,6 +137,8 @@ export async function POST(request: NextRequest) {
     if (!user) {
       try {
         const userId = randomUUID()
+        const isDisposable = isDisposableEmail(normalizedEmail)
+
         db.insert(users)
           .values({
             id: userId,
@@ -143,11 +146,17 @@ export async function POST(request: NextRequest) {
             name: verification.name,
             role: 'guest',
             emailVerified: true,
+            isDisposableEmail: isDisposable,
             createdAt: new Date(),
             updatedAt: new Date(),
           })
           .run()
         user = db.select().from(users).where(eq(users.id, userId)).get()
+
+        // Log if disposable email was allowed through
+        if (isDisposable) {
+          console.log('Disposable email flagged:', { email: normalizedEmail, userId })
+        }
       } catch (err) {
         console.error('Failed to create user:', err)
         return NextResponse.json(
