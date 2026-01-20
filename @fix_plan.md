@@ -52,9 +52,19 @@
 - [x] **Admin Settings Page** (`/admin/settings`) - Change password, regenerate TOTP, disable 2FA, notification preferences
 - [x] **Server-side Session Validation** (`lib/session.ts`) - Session validation helper for API routes with requireAdmin(), requireAuth(), AdminAuthError handling
 
-## Completed (Latest - 2026-01-19)
+## Completed (Latest - 2026-01-20)
 
-- [x] **Security Vulnerabilities Fixed** (2026-01-19 Latest) - Patched dev dependency vulnerabilities
+- [x] **Dependency Update - better-auth** (2026-01-20 Latest) - Updated authentication library
+  - [x] Updated better-auth from 1.4.15 to 1.4.16
+  - [x] Verified all 49 unit tests passing with updated dependency
+  - [x] Confirmed production build successful
+  - [x] No breaking changes detected
+  - **Impact:** Security improvements and bug fixes from upstream library
+  - Commit: b0c59e6
+
+## Completed (Earlier - 2026-01-19)
+
+- [x] **Security Vulnerabilities Fixed** (2026-01-19) - Patched dev dependency vulnerabilities
   - [x] Added pnpm overrides to force patched versions of vulnerable packages
   - [x] Fixed glob command injection vulnerability (GHSA-5j98-mcp5-4vw2) - dev-only
   - [x] Fixed esbuild dev server vulnerability (GHSA-67mh-4wv8-2f99) - dev-only
