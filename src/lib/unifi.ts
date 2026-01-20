@@ -167,7 +167,7 @@ class UnifiController {
    * 1. Marks session as expired (`isLoggedIn = false`)
    * 2. Clears cookies
    * 3. Recursively calls itself (which triggers re-login via auto-login)
-   * 4. **Important:** Only retries ONCE - the recursive call won't retry again if it fails
+   * 4. **Important:** Only retries ONCE - the `retryCount` parameter prevents infinite loops
    *
    * **CSRF Protection:** Includes `X-Csrf-Token` header if CSRF token was extracted during login.
    *
@@ -178,6 +178,7 @@ class UnifiController {
    * @param endpoint - API endpoint path (e.g., '/api/s/default/cmd/stamgr')
    * @param method - HTTP method (GET or POST), defaults to GET
    * @param body - Optional request body for POST requests
+   * @param retryCount - Internal parameter to prevent infinite retry loops (default: 0)
    * @returns Promise resolving to parsed response data, or null on failure
    *
    * @example
@@ -196,7 +197,8 @@ class UnifiController {
   private async request<T>(
     endpoint: string,
     method: 'GET' | 'POST' = 'GET',
-    body?: Record<string, unknown>
+    body?: Record<string, unknown>,
+    retryCount: number = 0
   ): Promise<T | null> {
     if (!this.isLoggedIn) {
       const loggedIn = await this.login()
@@ -221,11 +223,11 @@ class UnifiController {
         agent: httpsAgent,
       })
 
-      if (response.status === 401) {
-        // Session expired, re-login
+      if (response.status === 401 && retryCount < 1) {
+        // Session expired, re-login and retry once
         this.isLoggedIn = false
         this.cookies = []
-        return this.request(endpoint, method, body)
+        return this.request(endpoint, method, body, retryCount + 1)
       }
 
       if (!response.ok) {

@@ -8,7 +8,7 @@
  * - Session cleanup: Remove expired sessions
  */
 
-import { db, guests, networkStats, sessions, users } from '@/lib/db'
+import { db, guests, networkStats, sessions, users, verificationCodes } from '@/lib/db'
 import { sendExpiryReminder } from '@/lib/email'
 import { logger } from '@/lib/logger'
 import { unifi } from '@/lib/unifi'
@@ -521,6 +521,57 @@ export async function cleanupOldStats(): Promise<SyncResult> {
     return {
       success: false,
       message: `Stats cleanup failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    }
+  }
+}
+
+/**
+ * Cleanup old verification codes to prevent unbounded growth
+ *
+ * Removes verification codes older than 30 days to prevent the table from growing
+ * indefinitely. Unlike guests (which are kept for analytics), verification codes
+ * serve no purpose after expiry and can be safely deleted.
+ *
+ * **What It Does:**
+ * 1. Calculates cutoff date (30 days ago)
+ * 2. Deletes all verification_codes records older than cutoff
+ * 3. Returns count of deleted records
+ *
+ * **Why This Is Needed:**
+ * - Verification codes accumulate over time (one per guest auth attempt)
+ * - Expired codes are never reused
+ * - No analytics value after initial verification
+ * - Prevents database bloat
+ *
+ * **Runs Every:** Daily via instrumentation.ts (same schedule as other cleanup jobs)
+ *
+ * @returns Promise resolving to sync result with deletion count
+ *
+ * @example
+ * ```typescript
+ * const result = await cleanupExpiredVerificationCodes()
+ * console.log(`Deleted ${result.details.deleted} old verification codes`)
+ * ```
+ */
+export async function cleanupExpiredVerificationCodes(): Promise<SyncResult> {
+  try {
+    const thirtyDaysAgo = new Date(Date.now() - THIRTY_DAYS_MS)
+
+    const result = db
+      .delete(verificationCodes)
+      .where(lt(verificationCodes.createdAt, thirtyDaysAgo))
+      .run()
+
+    return {
+      success: true,
+      message: `Cleaned up ${result.changes} old verification codes`,
+      details: { deleted: result.changes },
+    }
+  } catch (error) {
+    console.error('Verification code cleanup error:', error)
+    return {
+      success: false,
+      message: `Verification code cleanup failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
     }
   }
 }

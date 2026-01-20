@@ -155,13 +155,17 @@ export default function AdminDashboard() {
     checkAuth()
   }, [router, fetchDashboardData])
 
-  // Auto-refresh every 30 seconds
+  // Auto-refresh every 30 seconds with jitter to prevent thundering herd
   useEffect(() => {
     if (isLoading) return
 
+    // Add 0-5 seconds of jitter to prevent all admin sessions from refreshing simultaneously
+    const jitter = Math.random() * 5000
+    const refreshInterval = 30000 + jitter
+
     const interval = setInterval(() => {
       fetchDashboardData()
-    }, 30000)
+    }, refreshInterval)
 
     return () => clearInterval(interval)
   }, [isLoading, fetchDashboardData])

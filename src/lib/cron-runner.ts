@@ -12,6 +12,7 @@ import {
   cleanupExpiredGuests,
   cleanupExpiredSessions,
   cleanupOldStats,
+  cleanupExpiredVerificationCodes,
   sendExpiryReminders,
 } from './cron'
 
@@ -54,6 +55,7 @@ export async function runCleanupJobs() {
     expiredGuests: await cleanupExpiredGuests(),
     expiredSessions: await cleanupExpiredSessions(),
     oldStats: await cleanupOldStats(),
+    expiredVerificationCodes: await cleanupExpiredVerificationCodes(),
   }
 
   for (const [job, result] of Object.entries(results)) {

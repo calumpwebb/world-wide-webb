@@ -46,6 +46,10 @@ const nextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=()',
           },
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=31536000; includeSubDomains', // HSTS: Force HTTPS for 1 year
+          },
         ],
       },
     ]
