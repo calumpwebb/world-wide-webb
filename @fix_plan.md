@@ -54,7 +54,17 @@
 
 ## Completed (Latest - 2026-01-19)
 
-- [x] **Project Status Report** (2026-01-19 Latest) - Comprehensive production readiness documentation
+- [x] **Critical Production Improvements** (2026-01-19 Latest) - Edge case fixes from comprehensive code review
+  - [x] Added verification code cleanup cron job to prevent database bloat (30-day retention)
+  - [x] Added HSTS security header (Strict-Transport-Security: max-age=31536000)
+  - [x] Fixed Unifi retry loop infinite recursion risk with retryCount parameter
+  - [x] Added jitter (0-5s) to admin dashboard auto-refresh to prevent thundering herd
+  - [x] Verified EMAIL_SUBJECT_ADMIN_NEW_GUEST constant exists and is properly used
+  - **Impact:** Better security (HSTS), improved performance under load (jitter), robust Unifi integration, prevents long-term database growth
+  - All 38 unit tests passing, production build successful
+  - Commit: 506acbf
+
+- [x] **Project Status Report** (2026-01-19) - Comprehensive production readiness documentation
   - [x] Created comprehensive PROJECT_STATUS.md with complete feature audit
   - [x] Documented all 100% complete features (guest auth, admin, network, monitoring)
   - [x] Verified test coverage (38 passing unit tests, E2E tests)
