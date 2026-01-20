@@ -418,6 +418,9 @@ Private project for home network use.
 - **[Monitoring Guide](docs/MONITORING.md)** - Prometheus + Grafana setup with alerting
 - **[Backup Guide](scripts/BACKUP_README.md)** - Database backup/restore procedures
 
+### Maintenance
+- **[Dependency Migration Plan](docs/DEPENDENCY_MIGRATION_PLAN.md)** - Major version upgrade guide (Next.js 16, React 19, ESLint 9, Tailwind 4)
+
 ### Development
 - **[E2E Testing](e2e/README.md)** - End-to-end test documentation (Playwright)
 - **[Project Requirements](docs/PRD.md)** - Full PRD with specifications

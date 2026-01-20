@@ -55,28 +55,46 @@
 ## Next Actions (Future Maintenance)
 
 ### Dependency Updates Available (2026-01-20)
-Several major dependency updates are available. These should be evaluated carefully as they involve major version changes:
+Several major dependency updates are available. These should be evaluated carefully as they involve major version changes.
+
+**📋 COMPREHENSIVE MIGRATION PLAN:** See `docs/DEPENDENCY_MIGRATION_PLAN.md` for detailed analysis, breaking changes, and step-by-step migration guide.
 
 **Major Updates:**
-- Next.js 14.2.35 → 16.1.4 (major version jump)
-- React 18.3.1 → 19.2.3 (major version upgrade)
-- ESLint 8.57.1 → 9.39.2 (major version upgrade)
-- Tailwind CSS 3.4.19 → 4.1.18 (major version upgrade)
+- Next.js 14.2.35 → 16.1.4 (🟡 Medium Risk - Async APIs, Turbopack default, middleware→proxy rename)
+- React 18.3.1 → 19.2.3 (🟡 Medium Risk - Removed APIs, TypeScript changes, concurrent rendering)
+- ESLint 8.57.1 → 9.39.2 (🟢 Low Risk - Flat config migration, automated tools available)
+- Tailwind CSS 3.4.19 → 4.1.18 (🔴 High Risk - Browser support requirements, CSS config rewrite, shadcn/ui compatibility)
 
 **Type Definition Updates:**
 - @types/node 20.19.30 → 25.0.9
 - @types/react 18.3.27 → 19.2.8
 - @types/react-dom 18.3.7 → 19.2.3
 
-**Recommendation:** These updates should be done in a separate maintenance cycle:
-1. Review breaking changes for each major version
-2. Create a feature branch for updates
-3. Update dependencies one at a time (or related groups)
-4. Run full test suite after each update
-5. Test in development environment
-6. Update code if breaking changes are found
+**Current Status:**
+- ✅ All 49 unit tests passing
+- ✅ Zero security vulnerabilities (`pnpm audit` clean)
+- ✅ Production-ready with comprehensive monitoring
+- ✅ Current dependencies are stable and fully supported
 
-**Priority:** Low - Current versions are stable and secure. No critical vulnerabilities detected (`pnpm audit` shows clean).
+**Recommended Approach:**
+- **Option A (Conservative):** Migrate one dependency per week over 4 weeks with thorough testing
+- **Option B (Recommended):** Migrate Next.js + React + ESLint, **SKIP Tailwind v4** (highest risk, browser compatibility concerns for captive portal)
+- **Option C (Defer):** Wait until business need arises (new features, security issues, or EOL warnings)
+
+**Priority:** Low - These migrations are **optional**. Current stack is secure, stable, and production-ready.
+
+**Estimated Effort:**
+- Phase 1 (Next.js 16): 3-4 hours (async API migration, testing)
+- Phase 2 (React 19): 1-2 hours (TypeScript codemod, testing)
+- Phase 3 (ESLint 9): 1 hour (flat config migration)
+- Phase 4 (Tailwind 4): 2-3 hours (⚠️ HIGH RISK - extensive visual regression testing required)
+- **Total:** 6-8 hours minimum (plus rollback time if issues occur)
+
+**Critical Questions Before Migration:**
+1. What is the oldest iOS/Safari version needed for captive portal guests? (Tailwind v4 requires Safari 16.4+)
+2. When is the best maintenance window? (Avoid critical deployment periods)
+3. Are new framework features needed? (If no, defer migration)
+4. What is acceptable downtime for testing? (Conservative = 1 week per phase, Aggressive = 1 day all-at-once)
 
 ## Completed (Latest - 2026-01-20)
 
