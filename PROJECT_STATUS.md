@@ -319,7 +319,12 @@ Duration:   934ms
 8. **Health Checks:** Setup UptimeRobot or Healthchecks.io
 
 ### Optional Enhancements (Not Critical)
-- [ ] Disposable email blocking (phase 3 feature)
+- ✅ Disposable email blocking - **COMPLETED (2026-01-19)**
+  - Comprehensive blocklist of 350+ disposable domains
+  - Database flagging with `isDisposableEmail` field
+  - Admin UI warning badges for flagged users
+  - Configurable via `ALLOW_DISPOSABLE_EMAILS` env var
+  - 11 unit tests with 100% coverage
 - [ ] Guest voucher system (phase 3 feature)
 - [ ] Redis caching layer for Unifi API calls
 - [ ] Progressive Web App (PWA) support
