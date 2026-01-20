@@ -61,11 +61,17 @@
     "react": "^18",
     "react-dom": "^18",
     "react-hook-form": "^7.71.1",
-    "resend": "^6.7.0",
+    "resend": "^6.8.0",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^4.3.5"
+  },
+  "pnpm": {
+    "overrides": {
+      "glob@>=10.2.0 <10.5.0": ">=10.5.0",
+      "esbuild@<=0.24.2": ">=0.25.0"
+    }
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0",
