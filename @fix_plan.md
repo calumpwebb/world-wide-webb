@@ -52,6 +52,32 @@
 - [x] **Admin Settings Page** (`/admin/settings`) - Change password, regenerate TOTP, disable 2FA, notification preferences
 - [x] **Server-side Session Validation** (`lib/session.ts`) - Session validation helper for API routes with requireAdmin(), requireAuth(), AdminAuthError handling
 
+## Next Actions (Future Maintenance)
+
+### Dependency Updates Available (2026-01-20)
+Several major dependency updates are available. These should be evaluated carefully as they involve major version changes:
+
+**Major Updates:**
+- Next.js 14.2.35 → 16.1.4 (major version jump)
+- React 18.3.1 → 19.2.3 (major version upgrade)
+- ESLint 8.57.1 → 9.39.2 (major version upgrade)
+- Tailwind CSS 3.4.19 → 4.1.18 (major version upgrade)
+
+**Type Definition Updates:**
+- @types/node 20.19.30 → 25.0.9
+- @types/react 18.3.27 → 19.2.8
+- @types/react-dom 18.3.7 → 19.2.3
+
+**Recommendation:** These updates should be done in a separate maintenance cycle:
+1. Review breaking changes for each major version
+2. Create a feature branch for updates
+3. Update dependencies one at a time (or related groups)
+4. Run full test suite after each update
+5. Test in development environment
+6. Update code if breaking changes are found
+
+**Priority:** Low - Current versions are stable and secure. No critical vulnerabilities detected (`pnpm audit` shows clean).
+
 ## Completed (Latest - 2026-01-20)
 
 - [x] **Dependency Cleanup** (2026-01-20 Latest) - Removed deprecated type definitions
