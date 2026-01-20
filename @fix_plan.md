@@ -54,7 +54,15 @@
 
 ## Completed (Latest - 2026-01-20)
 
-- [x] **Dependency Update - better-auth** (2026-01-20 Latest) - Updated authentication library
+- [x] **Dependency Cleanup** (2026-01-20 Latest) - Removed deprecated type definitions
+  - [x] Removed deprecated @types/bcryptjs package (bcryptjs now provides its own types)
+  - [x] All 49 unit tests passing
+  - [x] TypeScript compilation successful
+  - [x] No functionality changes
+  - **Impact:** Cleaner dependency tree, eliminates deprecation warnings
+  - Commit: 8715396
+
+- [x] **Dependency Update - better-auth** (2026-01-20) - Updated authentication library
   - [x] Updated better-auth from 1.4.15 to 1.4.16
   - [x] Verified all 49 unit tests passing with updated dependency
   - [x] Confirmed production build successful
